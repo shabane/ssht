@@ -3,6 +3,7 @@ package sshUtils
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/kevinburke/ssh_config"
 )
@@ -28,10 +29,27 @@ func GetAllHosts() []string {
 	for _, hosts := range config.Hosts {
 		for _, host := range hosts.Patterns {
 			if host.String() != "*" {
-				fmt.Println(host.String())
+				allHosts = append(allHosts, host.String())
 			}
 		}
 	}
 
 	return allHosts
+}
+
+func SearchHostname(hosts []string, key string) []string {
+	pattern := ".*" + key + ".*" //TODO: use bytes buffer for increase speed
+	var foundedHosts []string
+
+	for _, host := range hosts {
+		isFound, err := regexp.MatchString(pattern, host)
+		if err != nil {
+			panic(err) //TODO: log this out
+		}
+
+		if isFound {
+			foundedHosts = append(foundedHosts, host)
+		}
+	}
+	return foundedHosts
 }

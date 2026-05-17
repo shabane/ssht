@@ -7,6 +7,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+var allHosts = sshUtils.GetAllHosts()
+
 func main() {
 	app := tview.NewApplication()
 
@@ -15,13 +17,13 @@ func main() {
 		AddItem(component.SearchBox, 3, 0, true).
 		AddItem(component.ListBox, 0, 1, false)
 
-	for _, host := range sshUtils.GetAllHosts() {
+	for _, host := range allHosts {
 		component.ListBox.AddItem(host, "", 0, nil)
 	}
 
 	component.SearchBox.SetChangedFunc(func(text string) {
 		component.ListBox.Clear()
-		for _, host := range sshUtils.SearchHostname(sshUtils.GetAllHosts(), text) {
+		for _, host := range sshUtils.SearchHostname(allHosts, text) {
 			component.ListBox.AddItem(host, "", 0, nil)
 		}
 	})

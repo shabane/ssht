@@ -19,6 +19,13 @@ func main() {
 		component.ListBox.AddItem(host, "", 0, nil)
 	}
 
+	component.SearchBox.SetChangedFunc(func(text string) {
+		component.ListBox.Clear()
+		for _, host := range sshUtils.SearchHostname(sshUtils.GetAllHosts(), text) {
+			component.ListBox.AddItem(host, "", 0, nil)
+		}
+	})
+
 	err := app.SetRoot(mainBox, true).SetFocus(component.SearchBox).EnableMouse(true).Run()
 	if err != nil {
 		panic(err)

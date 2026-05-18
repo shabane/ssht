@@ -32,6 +32,7 @@ func main() {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window)
 		} else if keyName == "Esc" {
 			component.ListBox.Clear()
+			component.SearchBox.SetText("")
 			for _, host := range sshUtils.AllHosts {
 				component.ListBox.AddItem(host, "", 0, func() {
 					tmuxUtils.OpenOneInTmux(host)

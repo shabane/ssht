@@ -3,6 +3,7 @@ package main
 import (
 	"ssht/component"
 	"ssht/sshUtils"
+	"ssht/tmuxUtils"
 	"ssht/tvewUtils"
 )
 
@@ -14,7 +15,9 @@ func main() {
 		AddItem(component.ListBox, 0, 1, false)
 
 	for _, host := range sshUtils.AllHosts {
-		component.ListBox.AddItem(host, "", 0, nil)
+		component.ListBox.AddItem(host, "", 0, func() {
+			tmuxUtils.OpenOneInTmux(host)
+		})
 	}
 
 	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).

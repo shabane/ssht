@@ -28,7 +28,9 @@ func init() {
 	SearchBox.SetChangedFunc(func(text string) {
 		ListBox.Clear()
 		for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
-			ListBox.AddItem(host, "", 0, nil)
+			ListBox.AddItem(host, "", 0, func() {
+				tmuxUtils.OpenOneInTmux(host)
+			})
 			tmuxUtils.SelectedHosts = append(tmuxUtils.SelectedHosts, host)
 		}
 		tmuxUtils.SelectedHosts = []string{}

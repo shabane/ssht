@@ -45,7 +45,10 @@ func OpenSelectedInTmux(mode Mode) {
 				splitCmd = exec.Command("tmux", "new-window", "-t", tmuxId, "-n", host, "ssh", host)
 			} else if mode == TailedPane {
 				splitCmd = exec.Command("tmux", "split-window", "-f", "-t", tmuxId, "ssh", host)
+			} else if mode == SyncedTailedPane {
+				splitCmd = exec.Command("tmux", "split-window", "-f", "-t", tmuxId, "ssh", host)
 			}
+
 			if err := splitCmd.Run(); err != nil {
 				fmt.Printf("Error splitting window: %v\n", err)
 			}

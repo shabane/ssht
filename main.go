@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gdamore/tcell/v2"
 	"ssht/component"
 	"ssht/sshUtils"
 	"ssht/tmuxUtils"
@@ -19,6 +20,15 @@ func main() {
 			tmuxUtils.OpenOneInTmux(host)
 		})
 	}
+
+	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		keyName := event.Name()
+		if keyName == "Ctrl+A" {
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane)
+		}
+
+		return event
+	})
 
 	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).
 		SetFocus(component.SearchBox).EnableMouse(true).Run()

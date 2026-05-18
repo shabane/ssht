@@ -6,8 +6,9 @@ open a *tmux*, create many *panes* and in each of pane i *ssh*
 to a host then i set `syncronize-pane on` to use all the
 panes at once.
 
-Then i get familiar with [sshs](https://terminaltrove.com/feed/sshs/)
-tool. its just a TUI over *ssh_config* file, which let you
+Then I get familiar with [sshs](https://terminaltrove.com/feed/sshs/)
+tool. it's just a TUI over
+[*ssh_config*](https://man.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5&manpath=OpenBSD+3.4) file, which let you
 search and connect to your ssh host.
 
 I combine this two idea, which the result came out

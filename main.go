@@ -51,6 +51,7 @@ func main() {
 		} else if keyName == "Up" {
 			tvewUtils.App.SetFocus(component.ListBox)
 		} else if keyName != "Enter" {
+			component.SearchBox.SetText(component.SearchBox.GetText())
 			tvewUtils.App.SetFocus(component.SearchBox)
 		}
 
@@ -58,7 +59,7 @@ func main() {
 	})
 
 	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).
-		SetFocus(component.SearchBox).EnableMouse(true).Run()
+		SetFocus(component.SearchBox).Run()
 	if err != nil {
 		panic(err)
 	}

@@ -49,7 +49,7 @@ func OpenSelectedInTmux(mode Mode) {
 		}()
 
 		for _, host := range SelectedHosts[1:] {
-			splitCmd := exec.Command("tmux", "split-window", "-t", tmuxId, "ssh", host)
+			splitCmd := exec.Command("tmux", "split-window", "-f", "-t", tmuxId, "ssh", host)
 			if err := splitCmd.Run(); err != nil {
 				fmt.Printf("Error splitting window: %v\n", err)
 			}

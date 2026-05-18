@@ -15,7 +15,7 @@ func init() {
 
 func newSearchBox() *tview.InputField {
 	if SearchBox == nil {
-		searchBox := tview.NewInputField().SetPlaceholder("Search... | CTRL + h To Help")
+		searchBox := tview.NewInputField().SetPlaceholder("Search... | CTRL + G To Guid")
 		searchBox.SetBorder(true).SetBorderColor(tcell.GetColor("#42f5aa"))
 		searchBox.SetFieldBackgroundColor(tcell.ColorDefault)
 		SearchBox = searchBox

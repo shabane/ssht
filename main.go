@@ -50,7 +50,7 @@ func main() {
 			tvewUtils.App.SetFocus(component.ListBox)
 		} else if keyName == "Up" {
 			tvewUtils.App.SetFocus(component.ListBox)
-		} else {
+		} else if keyName != "Enter" {
 			tvewUtils.App.SetFocus(component.SearchBox)
 		}
 

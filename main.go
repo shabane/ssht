@@ -8,7 +8,6 @@ import (
 )
 
 var allHosts = sshUtils.GetAllHosts()
-var selectedHosts []string
 
 func main() {
 	app := tview.NewApplication()
@@ -21,14 +20,6 @@ func main() {
 	for _, host := range allHosts {
 		component.ListBox.AddItem(host, "", 0, nil)
 	}
-
-	component.SearchBox.SetChangedFunc(func(text string) {
-		component.ListBox.Clear()
-		for _, host := range sshUtils.SearchHostname(allHosts, text) {
-			component.ListBox.AddItem(host, "", 0, nil)
-			selectedHosts = append(selectedHosts, host)
-		}
-	})
 
 	err := app.SetRoot(mainBox, true).SetFocus(component.SearchBox).EnableMouse(true).Run()
 	if err != nil {

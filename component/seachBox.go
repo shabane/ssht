@@ -3,6 +3,7 @@ package component
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"ssht/sshUtils"
 )
 
 var SearchBox *tview.InputField
@@ -20,4 +21,15 @@ func newSearchBox() *tview.InputField {
 	}
 
 	return SearchBox
+}
+
+func init() {
+	SearchBox.SetChangedFunc(func(text string) {
+		ListBox.Clear()
+		for _, host := range sshUtils.SearchHostname(sshUtils.GetAllHosts(), text) {
+			ListBox.AddItem(host, "", 0, nil)
+			//selectedHosts = append(selectedHosts, host)
+		}
+		//selectedHosts = []string{}
+	})
 }

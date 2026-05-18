@@ -39,6 +39,7 @@ func GetAllHosts() []string {
 
 func SearchHostname(hosts []string, key string) []string {
 	pattern := ".*" + key + ".*" //TODO: use bytes buffer for increase speed
+	//TODO: use a config file to restrict and using other regex pattern by the user
 	var foundedHosts []string
 
 	for _, host := range hosts {

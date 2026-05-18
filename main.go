@@ -1,27 +1,24 @@
 package main
 
 import (
-	"github.com/rivo/tview"
 	"ssht/component"
 	"ssht/sshUtils"
+	"ssht/tvewUtils"
 )
 
-var allHosts = sshUtils.GetAllHosts()
-
 func main() {
-	app := tview.NewApplication()
 	sshUtils.GetAllHosts()
 
-	mainBox := tview.NewFlex().
-		SetDirection(tview.FlexRow).
+	tvewUtils.MainBox.
 		AddItem(component.SearchBox, 3, 0, true).
 		AddItem(component.ListBox, 0, 1, false)
 
-	for _, host := range allHosts {
+	for _, host := range sshUtils.AllHosts {
 		component.ListBox.AddItem(host, "", 0, nil)
 	}
 
-	err := app.SetRoot(mainBox, true).SetFocus(component.SearchBox).EnableMouse(true).Run()
+	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).
+		SetFocus(component.SearchBox).EnableMouse(true).Run()
 	if err != nil {
 		panic(err)
 	}

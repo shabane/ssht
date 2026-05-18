@@ -28,16 +28,7 @@ func OpenOneInTmux(hostname string) {
 			tmuxId = ""
 		}()
 
-		//TODO: this attach should be another function
-		attachCmd := exec.Command("tmux", "attach-session", "-t", tmuxId)
-
-		attachCmd.Stdout = os.Stdout
-		attachCmd.Stderr = os.Stderr
-		attachCmd.Stdin = os.Stdin
-
-		if err := attachCmd.Run(); err != nil {
-			fmt.Printf("Error attaching: %v\n", err)
-		}
+		attachToSession(tmuxId)
 	})
 }
 
@@ -60,18 +51,20 @@ func OpenSelectedInTmux(mode Mode) {
 			fmt.Printf("Error selecting layout: %v\n", err)
 		}
 
-		//TODO: this attach should be another function
-		attachCmd := exec.Command("tmux", "attach-session", "-t", tmuxId)
-
-		attachCmd.Stdout = os.Stdout
-		attachCmd.Stderr = os.Stderr
-		attachCmd.Stdin = os.Stdin
-
-		if err := attachCmd.Run(); err != nil {
-			fmt.Printf("Error attaching: %v\n", err)
-			fmt.Println("Press Enter to return...")
-			var discard string
-			fmt.Scanln(&discard)
-		}
+		attachToSession(tmuxId)
 	})
+}
+
+func attachToSession(id string) {
+	attachCmd := exec.Command("tmux", "attach-session", "-t", id)
+	attachCmd.Stdout = os.Stdout
+	attachCmd.Stderr = os.Stderr
+	attachCmd.Stdin = os.Stdin
+
+	if err := attachCmd.Run(); err != nil {
+		fmt.Printf("Error attaching: %v\n", err)
+		fmt.Println("Press Enter to return...")
+		var discard string
+		fmt.Scanln(&discard)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"ssht/sshUtils"
+	"ssht/tmuxUtils"
 )
 
 var SearchBox *tview.InputField
@@ -26,10 +27,10 @@ func newSearchBox() *tview.InputField {
 func init() {
 	SearchBox.SetChangedFunc(func(text string) {
 		ListBox.Clear()
-		for _, host := range sshUtils.SearchHostname(sshUtils.GetAllHosts(), text) {
+		for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
 			ListBox.AddItem(host, "", 0, nil)
-			//selectedHosts = append(selectedHosts, host)
+			tmuxUtils.SelectedHosts = append(tmuxUtils.SelectedHosts, host)
 		}
-		//selectedHosts = []string{}
+		tmuxUtils.SelectedHosts = []string{}
 	})
 }

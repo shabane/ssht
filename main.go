@@ -1,16 +1,16 @@
 package main
 
 import (
+	"github.com/rivo/tview"
 	"ssht/component"
 	"ssht/sshUtils"
-
-	"github.com/rivo/tview"
 )
 
 var allHosts = sshUtils.GetAllHosts()
 
 func main() {
 	app := tview.NewApplication()
+	sshUtils.GetAllHosts()
 
 	mainBox := tview.NewFlex().
 		SetDirection(tview.FlexRow).

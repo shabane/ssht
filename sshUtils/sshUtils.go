@@ -34,6 +34,7 @@ func GetAllHosts() []string {
 		}
 	}
 
+	AllHosts = allHosts
 	return allHosts
 }
 

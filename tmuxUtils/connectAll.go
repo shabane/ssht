@@ -46,6 +46,13 @@ func OpenSelectedInTmux(mode Mode) {
 			}
 		}
 
+		if mode == SyncedTailedPane {
+			syncCmd := exec.Command("tmux", "set-window-option", "-t", tmuxId, "synchronize-panes", "on")
+			if err := syncCmd.Run(); err != nil {
+				fmt.Printf("Error synchronizing panes: %v\n", err)
+			}
+		}
+
 		err := exec.Command("tmux", "select-layout", "-t", tmuxId, "tiled").Run()
 		if err != nil {
 			fmt.Printf("Error selecting layout: %v\n", err)

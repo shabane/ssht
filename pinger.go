@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"ssht/component"
-	"ssht/sshUtils"
 	"ssht/tvewUtils"
 	"time"
 
@@ -12,20 +11,24 @@ import (
 )
 
 func Pinger() {
-	for index, host := range sshUtils.AllHosts {
-		go func() {
-			port := ssh_config.Get(host, "port")
-			hostname := ssh_config.Get(host, "hostname")
+	defer func() {
+		if r := recover(); r != nil {
+			return
+		}
+	}()
+	for index := range component.ListBox.GetItemCount() {
+		host, _ := component.ListBox.GetItemText(index)
+		hostname := ssh_config.Get(host, "hostname")
+		port := ssh_config.Get(host, "Port")
 
-			con, err := net.DialTimeout("tcp", net.JoinHostPort(hostname, port), time.Second*5)
+		con, err := net.DialTimeout("tcp", net.JoinHostPort(hostname, port), time.Second*1)
 
-			if err != nil {
-				component.ListBox.SetItemText(index, fmt.Sprintf("[red]%s[-]", host), "")
-			} else {
-				component.ListBox.SetItemText(index, fmt.Sprintf("[green]%s[-]", host), "")
-				defer con.Close()
-			}
-			tvewUtils.App.Draw()
-		}()
+		if err != nil {
+			component.ListBox.SetItemText(index, fmt.Sprintf("[red]%s[-]", host), "")
+		} else {
+			component.ListBox.SetItemText(index, fmt.Sprintf("[green]%s[-]", host), "")
+			defer con.Close()
+		}
+		tvewUtils.App.Draw()
 	}
 }

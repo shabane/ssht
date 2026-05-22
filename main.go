@@ -22,7 +22,12 @@ func main() {
 		})
 	}
 
-	Pinger()
+	go func() {
+		for {
+			Pinger()
+			//time.Sleep(time.Second * 10) //TODO: enable this with .env
+		}
+	}()
 
 	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()

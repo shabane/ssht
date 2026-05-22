@@ -57,9 +57,7 @@ func main() {
 			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered Hosts In Synchronized Pane", 0, nil)
 			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered Hosts Eeach In New Window", 0, nil)
 			component.ListBox.AddItem("CTRL+C", "Quit", 0, nil)
-		} else if keyName == "Down" {
-			tvewUtils.App.SetFocus(component.ListBox)
-		} else if keyName == "Up" {
+		} else if keyName == "Down" || keyName == "Up" {
 			tvewUtils.App.SetFocus(component.ListBox)
 		} else if keyName != "Enter" {
 			component.SearchBox.SetText(component.SearchBox.GetText())

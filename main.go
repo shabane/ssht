@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"ssht/component"
 	"ssht/sshUtils"
 	"ssht/tmuxUtils"
 	"ssht/tvewUtils"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 func main() {
@@ -20,6 +21,8 @@ func main() {
 			tmuxUtils.OpenOneInTmux(host)
 		})
 	}
+
+	Pinger()
 
 	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()

@@ -62,6 +62,8 @@ func main() {
 		} else if keyName != "Enter" {
 			component.SearchBox.SetText(component.SearchBox.GetText())
 			tvewUtils.App.SetFocus(component.SearchBox)
+		} else if keyName == "Enter" {
+			tvewUtils.App.SetFocus(component.ListBox)
 		}
 
 		return event

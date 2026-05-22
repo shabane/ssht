@@ -9,6 +9,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+var stopPing = false
+
 func main() {
 	sshUtils.GetAllHosts()
 
@@ -24,8 +26,10 @@ func main() {
 
 	go func() {
 		for {
-			Pinger()
-			//time.Sleep(time.Second * 10) //TODO: enable this with .env
+			if !stopPing {
+				Pinger()
+				//time.Sleep(time.Second * 10) //TODO: enable this with .env
+			}
 		}
 	}()
 
@@ -41,6 +45,7 @@ func main() {
 		} else if keyName == "Ctrl+N" {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window)
 		} else if keyName == "Esc" {
+			stopPing = false
 			component.ListBox.Clear()
 			component.SearchBox.SetText("")
 			for _, host := range sshUtils.AllHosts {
@@ -49,6 +54,7 @@ func main() {
 				})
 			}
 		} else if keyName == "Ctrl+G" {
+			stopPing = true
 			component.ListBox.Clear()
 			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
 			component.ListBox.AddItem("Esc", "Back", 0, nil)

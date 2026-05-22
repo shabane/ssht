@@ -16,6 +16,11 @@ with `ssht`, a TUI that let you search between your ssh hosts
 and then open all the hosts that you searched
 in a tmux session. or you can connect to one host.
 
+### Features
+- searchable
+- ssh in a tmux session
+- use red and green color for reachable or unreachable hosts
+
 ### shortcuts
 |  Key   |                       Task                       |
 |:------:|:------------------------------------------------:|
@@ -26,3 +31,6 @@ in a tmux session. or you can connect to one host.
 | CTRL+C |                       Quit                       |
 |  Esc   |                       Back                       |
 
+---
+
+> I guaranty that its work on my machine.

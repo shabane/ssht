@@ -2,16 +2,33 @@ package tmuxUtils
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"ssht/tvewUtils"
 	"strconv"
+	"strings"
 	"time"
 )
+
+func getCurrentTmuxSession() string {
+	if os.Getenv("TMUX") == "" {
+		return ""
+	}
+	cmd := exec.Command("tmux", "display-message", "-p", "#S")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
 
 func SessionCreator(hostname string) {
 	if tmuxId == "" {
 		tmuxId = "ssht-" + strconv.Itoa(int(time.Now().Unix()))
+		if err := os.Setenv("TMUX_ID", tmuxId); err != nil {
+			log.Fatal(err)
+		}
 
 		initCmd := exec.Command("tmux", "new-session", "-d", "-s", tmuxId, "ssh", hostname)
 		if err := initCmd.Run(); err != nil {
@@ -22,6 +39,23 @@ func SessionCreator(hostname string) {
 }
 
 func OpenOneInTmux(hostname string) {
+	currentTmuxId := getCurrentTmuxSession()
+	if strings.HasPrefix(currentTmuxId, "ssht-") {
+		tvewUtils.App.Suspend(func() {
+			cmd := exec.Command("ssh", hostname)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Stdin = os.Stdin
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("Error running ssh: %v\n", err)
+				fmt.Println("Press Enter to return...")
+				var discard string
+				fmt.Scanln(&discard)
+			}
+		})
+		return
+	}
+
 	SessionCreator(hostname)
 	tvewUtils.App.Suspend(func() {
 		defer func() {
@@ -33,6 +67,50 @@ func OpenOneInTmux(hostname string) {
 }
 
 func OpenSelectedInTmux(mode Mode) {
+	currentTmuxId := getCurrentTmuxSession()
+	if strings.HasPrefix(currentTmuxId, "ssht-") {
+		tvewUtils.App.Suspend(func() {
+			var splitCmd *exec.Cmd
+			for _, host := range SelectedHosts[1:] {
+				if mode == Window {
+					splitCmd = exec.Command("tmux", "new-window", "-t", currentTmuxId, "-n", host, "ssh", host)
+				} else if mode == TailedPane {
+					splitCmd = exec.Command("tmux", "split-window", "-f", "-t", currentTmuxId, "ssh", host)
+				} else if mode == SyncedTailedPane {
+					splitCmd = exec.Command("tmux", "split-window", "-f", "-t", currentTmuxId, "ssh", host)
+				}
+
+				if err := splitCmd.Run(); err != nil {
+					fmt.Printf("Error splitting window: %v\n", err)
+				}
+			}
+
+			if mode == SyncedTailedPane {
+				syncCmd := exec.Command("tmux", "set-window-option", "-t", currentTmuxId, "synchronize-panes", "on")
+				if err := syncCmd.Run(); err != nil {
+					fmt.Printf("Error synchronizing panes: %v\n", err)
+				}
+			}
+
+			err := exec.Command("tmux", "select-layout", "-t", currentTmuxId, "tiled").Run()
+			if err != nil {
+				fmt.Printf("Error selecting layout: %v\n", err)
+			}
+
+			cmd := exec.Command("ssh", SelectedHosts[0])
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			cmd.Stdin = os.Stdin
+			if err := cmd.Run(); err != nil {
+				fmt.Printf("Error running ssh: %v\n", err)
+				fmt.Println("Press Enter to return...")
+				var discard string
+				fmt.Scanln(&discard)
+			}
+		})
+		return
+	}
+
 	SessionCreator(SelectedHosts[0])
 	tvewUtils.App.Suspend(func() {
 		defer func() {
@@ -71,13 +149,18 @@ func OpenSelectedInTmux(mode Mode) {
 }
 
 func attachToSession(id string) {
-	attachCmd := exec.Command("tmux", "attach-session", "-t", id)
+	var attachCmd *exec.Cmd
+	if os.Getenv("TMUX") != "" {
+		attachCmd = exec.Command("tmux", "switch-client", "-t", id)
+	} else {
+		attachCmd = exec.Command("tmux", "attach-session", "-t", id)
+	}
 	attachCmd.Stdout = os.Stdout
 	attachCmd.Stderr = os.Stderr
 	attachCmd.Stdin = os.Stdin
 
 	if err := attachCmd.Run(); err != nil {
-		fmt.Printf("Error attaching: %v\n", err)
+		fmt.Printf("Error attaching/switching: %v\n", err)
 		fmt.Println("Press Enter to return...")
 		var discard string
 		fmt.Scanln(&discard)

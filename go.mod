@@ -1,6 +1,6 @@
 module ssht
 
-go 1.26
+go 1.25
 
 require (
 	github.com/kevinburke/ssh_config v1.6.0

@@ -1,5 +1,7 @@
 # ssht
 
+![ssht demo](assets/demo.gif)
+
 **ssht** or **ssh-tmux**.
 As a DevOps engineer, every day i used to
 open a *tmux*, create many *panes* and in each of pane i *ssh*
@@ -38,6 +40,20 @@ This script will automatically detect your OS/architecture, download the correct
 | CTRL+N |  Open All Searched Hosts In New Window On tmux   |
 | CTRL+C |                       Quit                       |
 |  Esc   |                       Back                       |
+
+### Demos
+
+#### 1. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct)
+![Connect One](assets/connect_one.gif)
+
+#### 2. Connect to All (Tailed Mode - `CTRL+A`)
+![Connect All Tailed](assets/connect_all_tailed.gif)
+
+#### 3. Connect to All with Synced Panes (`CTRL+O`)
+![Connect All Synced](assets/connect_all_synced.gif)
+
+#### 4. Connect to All in New Windows (`CTRL+N`)
+![Connect All Windows](assets/connect_all_windows.gif)
 
 ---
 

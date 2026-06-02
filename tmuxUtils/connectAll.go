@@ -38,21 +38,38 @@ func SessionCreator(hostname string) {
 	}
 }
 
+func cleanHostname(host string) string {
+	host = strings.ReplaceAll(host, "[green]", "")
+	host = strings.ReplaceAll(host, "[red]", "")
+	host = strings.ReplaceAll(host, "[-]", "")
+	return host
+}
+
+func runSSH(hostname string) {
+	hostname = cleanHostname(hostname)
+	cmd := exec.Command("ssh", hostname)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error running ssh: %v\n", err)
+		fmt.Println("Press Enter to return...")
+		var discard string
+		fmt.Scanln(&discard)
+	}
+}
+
+func DirectConnect(hostname string) {
+	tvewUtils.App.Suspend(func() {
+		runSSH(hostname)
+	})
+}
+
 func OpenOneInTmux(hostname string) {
+	hostname = cleanHostname(hostname)
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
-		tvewUtils.App.Suspend(func() {
-			cmd := exec.Command("ssh", hostname)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			cmd.Stdin = os.Stdin
-			if err := cmd.Run(); err != nil {
-				fmt.Printf("Error running ssh: %v\n", err)
-				fmt.Println("Press Enter to return...")
-				var discard string
-				fmt.Scanln(&discard)
-			}
-		})
+		DirectConnect(hostname)
 		return
 	}
 
@@ -67,6 +84,9 @@ func OpenOneInTmux(hostname string) {
 }
 
 func OpenSelectedInTmux(mode Mode) {
+	for i, host := range SelectedHosts {
+		SelectedHosts[i] = cleanHostname(host)
+	}
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tvewUtils.App.Suspend(func() {
@@ -97,16 +117,7 @@ func OpenSelectedInTmux(mode Mode) {
 				fmt.Printf("Error selecting layout: %v\n", err)
 			}
 
-			cmd := exec.Command("ssh", SelectedHosts[0])
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			cmd.Stdin = os.Stdin
-			if err := cmd.Run(); err != nil {
-				fmt.Printf("Error running ssh: %v\n", err)
-				fmt.Println("Press Enter to return...")
-				var discard string
-				fmt.Scanln(&discard)
-			}
+			runSSH(SelectedHosts[0])
 		})
 		return
 	}

@@ -21,10 +21,18 @@ in a tmux session. or you can connect to one host.
 - ssh in a tmux session
 - use red and green color for reachable or unreachable hosts
 
+### Installation
+To install or update to the latest version of `ssht`, run the following command in your terminal:
+```bash
+curl -sSL https://raw.githubusercontent.com/shabane/ssht/master/install.sh | bash
+```
+This script will automatically detect your OS/architecture, download the correct latest release from GitHub, and install it to `~/.local/bin/ssht`.
+
 ### shortcuts
 |  Key   |                       Task                       |
 |:------:|:------------------------------------------------:|
 | CTRL+G |                 Open Guide Menu                  |
+| CTRL+W | Connect Directly to Selected Host (No Tmux)      |
 | CTRL+A |         Open All Searched Hosts in tmux          |
 | CTRL+O | Open All Searched Hosts With Synced Pane In tmux |
 | CTRL+N |  Open All Searched Hosts In New Window On tmux   |

@@ -15,7 +15,7 @@ func init() {
 
 func newSearchBox() *tview.InputField {
 	if SearchBox == nil {
-		searchBox := tview.NewInputField().SetPlaceholder("Search... | CTRL + G To Guid")
+		searchBox := tview.NewInputField().SetPlaceholder("Search... | CTRL + G To Guide")
 		searchBox.SetBorder(true).SetBorderColor(tcell.GetColor("#42f5aa"))
 		searchBox.SetFieldBackgroundColor(tcell.ColorDefault)
 		SearchBox = searchBox
@@ -26,10 +26,10 @@ func newSearchBox() *tview.InputField {
 
 func init() {
 	SearchBox.SetChangedFunc(func(text string) {
-		ListBox.Clear()
+		Clear()
 		tmuxUtils.SelectedHosts = []string{}
 		for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
-			ListBox.AddItem(host, "", 0, func() {
+			AddItem(host, "", 0, func() {
 				tmuxUtils.OpenOneInTmux(host)
 			})
 			tmuxUtils.SelectedHosts = append(tmuxUtils.SelectedHosts, host)

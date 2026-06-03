@@ -38,15 +38,7 @@ func SessionCreator(hostname string) {
 	}
 }
 
-func cleanHostname(host string) string {
-	host = strings.ReplaceAll(host, "[green]", "")
-	host = strings.ReplaceAll(host, "[red]", "")
-	host = strings.ReplaceAll(host, "[-]", "")
-	return host
-}
-
 func runSSH(hostname string) {
-	hostname = cleanHostname(hostname)
 	cmd := exec.Command("ssh", hostname)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -66,7 +58,6 @@ func DirectConnect(hostname string) {
 }
 
 func OpenOneInTmux(hostname string) {
-	hostname = cleanHostname(hostname)
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		DirectConnect(hostname)
@@ -84,9 +75,6 @@ func OpenOneInTmux(hostname string) {
 }
 
 func OpenSelectedInTmux(mode Mode) {
-	for i, host := range SelectedHosts {
-		SelectedHosts[i] = cleanHostname(host)
-	}
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tvewUtils.App.Suspend(func() {

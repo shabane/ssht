@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"ssht/sshUtils"
 	"ssht/tvewUtils"
 	"strconv"
 	"strings"
@@ -75,6 +76,16 @@ func OpenOneInTmux(hostname string) {
 }
 
 func OpenSelectedInTmux(mode Mode) {
+	// Fall back to every host when nothing is filtered, and bail out if there
+	// are still no hosts — otherwise SelectedHosts[0] / SelectedHosts[1:] below
+	// would panic on an empty slice.
+	if len(SelectedHosts) == 0 {
+		SelectedHosts = sshUtils.AllHosts
+	}
+	if len(SelectedHosts) == 0 {
+		return
+	}
+
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tvewUtils.App.Suspend(func() {

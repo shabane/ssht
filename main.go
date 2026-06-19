@@ -42,9 +42,6 @@ func main() {
 	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()
 		if keyName == "Ctrl+A" {
-			if len(tmuxUtils.SelectedHosts) == 0 {
-				tmuxUtils.SelectedHosts = sshUtils.AllHosts
-			}
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane)
 		} else if keyName == "Ctrl+O" {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane)

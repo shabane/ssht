@@ -28,9 +28,13 @@ func GetAllHosts() []string {
 
 	for _, hosts := range config.Hosts {
 		for _, host := range hosts.Patterns {
-			if host.String() != "*" {
-				allHosts = append(allHosts, host.String())
+			pattern := host.String()
+			// Skip glob/negated patterns (e.g. "*", "kimia.prod.*", "!host").
+			// These are not concrete hostnames and cannot be connected to.
+			if strings.ContainsAny(pattern, "*?!") {
+				continue
 			}
+			allHosts = append(allHosts, pattern)
 		}
 	}
 

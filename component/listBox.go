@@ -11,6 +11,20 @@ var ListBox *tview.List
 var visibleHosts []string
 var mu sync.Mutex
 
+// PingNow signals the ping goroutine to re-check the currently visible hosts
+// immediately, instead of waiting for the next periodic tick.
+var PingNow = make(chan struct{}, 1)
+
+// RequestPing asks for an immediate ping pass. It never blocks: if a request is
+// already pending, this is a no-op, which coalesces bursts of search keystrokes
+// into a single re-check.
+func RequestPing() {
+	select {
+	case PingNow <- struct{}{}:
+	default:
+	}
+}
+
 func init() {
 	newListBox()
 }

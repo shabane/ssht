@@ -34,5 +34,8 @@ func init() {
 			})
 			tmuxUtils.SelectedHosts = append(tmuxUtils.SelectedHosts, host)
 		}
+		// The visible list just changed; re-check reachability right away rather
+		// than waiting up to a full tick.
+		RequestPing()
 	})
 }

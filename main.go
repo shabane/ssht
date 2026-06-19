@@ -32,7 +32,13 @@ func main() {
 		Pinger()
 		ticker := time.NewTicker(time.Second * 10)
 		defer ticker.Stop()
-		for range ticker.C {
+		for {
+			// Re-ping on the periodic tick, or as soon as a search changes the
+			// visible host list (so filtered hosts get colored without delay).
+			select {
+			case <-ticker.C:
+			case <-component.PingNow:
+			}
 			if !stopPing.Load() {
 				Pinger()
 			}
@@ -56,13 +62,9 @@ func main() {
 			}
 		} else if keyName == "Esc" {
 			stopPing.Store(false)
-			component.Clear()
+			// Clearing the search text triggers the search handler, which
+			// repopulates the list with every host and requests a fresh ping.
 			component.SearchBox.SetText("")
-			for _, host := range sshUtils.AllHosts {
-				component.AddItem(host, "", 0, func() {
-					tmuxUtils.OpenOneInTmux(host)
-				})
-			}
 		} else if keyName == "Ctrl+G" {
 			stopPing.Store(true)
 			component.Clear()

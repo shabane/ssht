@@ -20,6 +20,12 @@ func Pinger() {
 	hosts := component.GetVisibleHosts()
 	for index, host := range hosts {
 		hostname := ssh_config.Get(host, "hostname")
+		if hostname == "" {
+			// No explicit HostName directive: ssh uses the alias itself as the
+			// hostname, so do the same — otherwise we'd dial an empty host and
+			// every such entry would always show as unreachable.
+			hostname = host
+		}
 		port := ssh_config.Get(host, "Port")
 		if port == "" {
 			port = "22"

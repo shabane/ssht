@@ -89,33 +89,7 @@ func OpenSelectedInTmux(mode Mode) {
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tvewUtils.App.Suspend(func() {
-			var splitCmd *exec.Cmd
-			for _, host := range SelectedHosts[1:] {
-				if mode == Window {
-					splitCmd = exec.Command("tmux", "new-window", "-t", currentTmuxId, "-n", host, "ssh", host)
-				} else if mode == TailedPane {
-					splitCmd = exec.Command("tmux", "split-window", "-f", "-t", currentTmuxId, "ssh", host)
-				} else if mode == SyncedTailedPane {
-					splitCmd = exec.Command("tmux", "split-window", "-f", "-t", currentTmuxId, "ssh", host)
-				}
-
-				if err := splitCmd.Run(); err != nil {
-					fmt.Printf("Error splitting window: %v\n", err)
-				}
-			}
-
-			if mode == SyncedTailedPane {
-				syncCmd := exec.Command("tmux", "set-window-option", "-t", currentTmuxId, "synchronize-panes", "on")
-				if err := syncCmd.Run(); err != nil {
-					fmt.Printf("Error synchronizing panes: %v\n", err)
-				}
-			}
-
-			err := exec.Command("tmux", "select-layout", "-t", currentTmuxId, "tiled").Run()
-			if err != nil {
-				fmt.Printf("Error selecting layout: %v\n", err)
-			}
-
+			openExtraHosts(currentTmuxId, mode)
 			runSSH(SelectedHosts[0])
 		})
 		return
@@ -127,35 +101,47 @@ func OpenSelectedInTmux(mode Mode) {
 			tmuxId = ""
 		}()
 
-		var splitCmd *exec.Cmd
-		for _, host := range SelectedHosts[1:] {
-			if mode == Window {
-				splitCmd = exec.Command("tmux", "new-window", "-t", tmuxId, "-n", host, "ssh", host)
-			} else if mode == TailedPane {
-				splitCmd = exec.Command("tmux", "split-window", "-f", "-t", tmuxId, "ssh", host)
-			} else if mode == SyncedTailedPane {
-				splitCmd = exec.Command("tmux", "split-window", "-f", "-t", tmuxId, "ssh", host)
-			}
-
-			if err := splitCmd.Run(); err != nil {
-				fmt.Printf("Error splitting window: %v\n", err)
-			}
-		}
-
-		if mode == SyncedTailedPane {
-			syncCmd := exec.Command("tmux", "set-window-option", "-t", tmuxId, "synchronize-panes", "on")
-			if err := syncCmd.Run(); err != nil {
-				fmt.Printf("Error synchronizing panes: %v\n", err)
-			}
-		}
-
-		err := exec.Command("tmux", "select-layout", "-t", tmuxId, "tiled").Run()
-		if err != nil {
-			fmt.Printf("Error selecting layout: %v\n", err)
-		}
-
+		openExtraHosts(tmuxId, mode)
 		attachToSession(tmuxId)
 	})
+}
+
+// openExtraHosts opens SelectedHosts[1:] in the tmux session/window identified
+// by target. SelectedHosts[0] is expected to already be running in the session.
+func openExtraHosts(target string, mode Mode) {
+	for _, host := range SelectedHosts[1:] {
+		var splitCmd *exec.Cmd
+		if mode == Window {
+			splitCmd = exec.Command("tmux", "new-window", "-t", target, "-n", host, "ssh", host)
+		} else {
+			splitCmd = exec.Command("tmux", "split-window", "-f", "-t", target, "ssh", host)
+		}
+
+		if err := splitCmd.Run(); err != nil {
+			fmt.Printf("Error splitting window: %v\n", err)
+		}
+
+		// Re-tile after every pane split so tmux always has room for the next
+		// one. Without this, repeated splits shrink the panes until tmux fails
+		// with "no space for new pane" (exit status 1) when connecting to many
+		// hosts. New windows don't share space, so this only applies to panes.
+		if mode != Window {
+			if err := exec.Command("tmux", "select-layout", "-t", target, "tiled").Run(); err != nil {
+				fmt.Printf("Error selecting layout: %v\n", err)
+			}
+		}
+	}
+
+	if mode == SyncedTailedPane {
+		syncCmd := exec.Command("tmux", "set-window-option", "-t", target, "synchronize-panes", "on")
+		if err := syncCmd.Run(); err != nil {
+			fmt.Printf("Error synchronizing panes: %v\n", err)
+		}
+	}
+
+	if err := exec.Command("tmux", "select-layout", "-t", target, "tiled").Run(); err != nil {
+		fmt.Printf("Error selecting layout: %v\n", err)
+	}
 }
 
 func attachToSession(id string) {

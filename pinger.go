@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"ssht/component"
@@ -10,7 +11,11 @@ import (
 	"github.com/kevinburke/ssh_config"
 )
 
-func Pinger() {
+// Pinger checks reachability of the currently visible hosts and recolors them.
+// It stops as soon as ctx is cancelled, which happens when a newer search
+// supersedes this pass, so stale results from the previous host list are never
+// applied.
+func Pinger(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			return
@@ -18,7 +23,13 @@ func Pinger() {
 	}()
 
 	hosts := component.GetVisibleHosts()
+	dialer := net.Dialer{Timeout: time.Second}
 	for index, host := range hosts {
+		// Bail out promptly once a newer search has cancelled this pass.
+		if ctx.Err() != nil {
+			return
+		}
+
 		hostname := ssh_config.Get(host, "hostname")
 		if hostname == "" {
 			// No explicit HostName directive: ssh uses the alias itself as the
@@ -31,10 +42,15 @@ func Pinger() {
 			port = "22"
 		}
 
-		con, err := net.DialTimeout("tcp", net.JoinHostPort(hostname, port), time.Second*1)
+		con, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(hostname, port))
 
 		var formattedHost string
 		if err != nil {
+			// A cancelled dial isn't a genuine "unreachable" verdict — abandon
+			// the pass and let the superseding one color the new list.
+			if ctx.Err() != nil {
+				return
+			}
 			formattedHost = fmt.Sprintf("[red]%s[-]", host)
 		} else {
 			formattedHost = fmt.Sprintf("[green]%s[-]", host)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"sync/atomic"
 	"time"
 
@@ -28,8 +29,21 @@ func main() {
 	}
 
 	go func() {
+		var cancelPrev context.CancelFunc
+		startPing := func() {
+			// Cancel any still-running pass before launching a fresh one, so a
+			// new search supersedes the previous (possibly slow) ping instead of
+			// queuing behind it.
+			if cancelPrev != nil {
+				cancelPrev()
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			cancelPrev = cancel
+			go Pinger(ctx)
+		}
+
 		// Run once immediately
-		Pinger()
+		startPing()
 		ticker := time.NewTicker(time.Second * 10)
 		defer ticker.Stop()
 		for {
@@ -40,7 +54,7 @@ func main() {
 			case <-component.PingNow:
 			}
 			if !stopPing.Load() {
-				Pinger()
+				startPing()
 			}
 		}
 	}()

@@ -3,7 +3,7 @@ package sshUtils
 import (
 	"fmt"
 	"os"
-	"regexp"
+	"strings"
 
 	"github.com/kevinburke/ssh_config"
 )
@@ -39,17 +39,16 @@ func GetAllHosts() []string {
 }
 
 func SearchHostname(hosts []string, key string) []string {
-	pattern := ".*" + key + ".*" //TODO: use bytes buffer for increase speed
-	//TODO: use a config file to restrict and using other regex pattern by the user
+	// Literal, case-insensitive substring match. Using strings.Contains rather
+	// than a regex avoids treating "." (and other regex metacharacters) as
+	// wildcards — so searching "kimia.prod.kuber" matches only that host and
+	// not unrelated names like "kimia-prod-kuber-old". It also can't panic on
+	// invalid user input.
+	key = strings.ToLower(key)
 	var foundedHosts []string
 
 	for _, host := range hosts {
-		isFound, err := regexp.MatchString(pattern, host)
-		if err != nil {
-			panic(err) //TODO: log this out
-		}
-
-		if isFound {
+		if strings.Contains(strings.ToLower(host), key) {
 			foundedHosts = append(foundedHosts, host)
 		}
 	}

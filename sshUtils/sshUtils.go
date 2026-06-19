@@ -39,6 +39,12 @@ func GetAllHosts() []string {
 	}
 
 	AllHosts = allHosts
+	MaxHostLen = 0
+	for _, h := range allHosts {
+		if len(h) > MaxHostLen {
+			MaxHostLen = len(h)
+		}
+	}
 	return allHosts
 }
 

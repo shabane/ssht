@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"ssht/component"
 	"ssht/tvewUtils"
@@ -44,18 +43,21 @@ func Pinger(ctx context.Context) {
 
 		con, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(hostname, port))
 
-		var formattedHost string
+		color := "green"
 		if err != nil {
 			// A cancelled dial isn't a genuine "unreachable" verdict — abandon
 			// the pass and let the superseding one color the new list.
 			if ctx.Err() != nil {
 				return
 			}
-			formattedHost = fmt.Sprintf("[red]%s[-]", host)
+			color = "red"
 		} else {
-			formattedHost = fmt.Sprintf("[green]%s[-]", host)
 			con.Close() // Close immediately to avoid socket leakage
 		}
+
+		// Only the alias color reflects reachability; the IP is part of the
+		// label that was already rendered when the item was added.
+		formattedHost := component.FormatHost(host, color)
 
 		// Update UI thread-safely
 		func(i int, origHost, text string) {

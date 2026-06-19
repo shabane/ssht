@@ -1,9 +1,13 @@
 package component
 
 import (
+	"fmt"
 	"sync"
 
+	"ssht/sshUtils"
+
 	"github.com/gdamore/tcell/v2"
+	"github.com/kevinburke/ssh_config"
 	"github.com/rivo/tview"
 )
 
@@ -49,8 +53,30 @@ func Clear() {
 func AddItem(host string, secondaryText string, shortcut rune, selectFunc func()) {
 	mu.Lock()
 	defer mu.Unlock()
-	ListBox.AddItem(host, secondaryText, shortcut, selectFunc)
+	// Render the alias + its configured IP straight away (uncolored). The IP is
+	// static config data, so it must not depend on the pinger — otherwise it
+	// would be missing until a host is pinged, and absent entirely for hosts
+	// that never become reachable. The pinger only recolors the alias later.
+	ListBox.AddItem(FormatHost(host, ""), secondaryText, shortcut, selectFunc)
 	visibleHosts = append(visibleHosts, host)
+}
+
+// FormatHost builds a list label "alias | ip", where ip is the host's
+// configured HostName from ssh_config (or "n/a" if unset). The alias is padded
+// to the longest alias width so the IP column lines up. color is a tview color
+// name (e.g. "green"/"red") applied to the alias, or "" for the default color.
+func FormatHost(host, color string) string {
+	ip := ssh_config.Get(host, "hostname")
+	if ip == "" {
+		ip = "n/a"
+	}
+	// Pad the raw alias first; color tags are zero-width, so wrapping the
+	// already-padded alias keeps the IP column aligned.
+	alias := fmt.Sprintf("%-*s", sshUtils.MaxHostLen, host)
+	if color != "" {
+		alias = fmt.Sprintf("[%s]%s[-]", color, alias)
+	}
+	return fmt.Sprintf("%s | %s", alias, ip)
 }
 
 func GetVisibleHosts() []string {

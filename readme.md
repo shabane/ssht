@@ -19,9 +19,12 @@ and then open all the hosts that you searched
 in a tmux session. or you can connect to one host.
 
 ### Features
-- searchable
-- ssh in a tmux session
+- searchable (case-insensitive substring match over your ssh hosts)
+- ssh in a tmux session (tailed panes, synced panes, or separate windows)
+- connect directly to a single host without tmux
+- shows each host's configured IP (`HostName`) next to its name
 - use red and green color for reachable or unreachable hosts
+- live reachability check that refreshes as you search, running up to 22 hosts in parallel so big lists stay fast
 
 ### Installation
 To install or update to the latest version of `ssht`, run the following command in your terminal:

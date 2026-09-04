@@ -108,6 +108,13 @@ func SearchHostname(hosts []string, key string) []string {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}
+
+		// Match against ProxyJump bastion host
+		proxyJump := ssh_config.Get(host, "proxyjump")
+		if proxyJump != "" && strings.Contains(strings.ToLower(proxyJump), key) {
+			foundedHosts = append(foundedHosts, host)
+			continue
+		}
 	}
 	return foundedHosts
 }

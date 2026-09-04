@@ -36,6 +36,22 @@ loop:
 			break
 		}
 
+		// If host is behind a ProxyJump or ProxyCommand, direct local TCP dial
+		// cannot reach its private address and would falsely report it red.
+		// Color it yellow instead and skip direct dial.
+		proxyJump := ssh_config.Get(host, "proxyjump")
+		proxyCommand := ssh_config.Get(host, "proxycommand")
+		if proxyJump != "" || proxyCommand != "" {
+			idx := index
+			h := host
+			tvewUtils.App.QueueUpdateDraw(func() {
+				if currentHost, ok := component.GetHost(idx); ok && currentHost == h {
+					component.ListBox.SetItemText(idx, component.FormatHost(h, "yellow"), "")
+				}
+			})
+			continue
+		}
+
 		// Resolve the connection target sequentially: ssh_config lookups are
 		// local and fast, and keeping them off the worker goroutines avoids
 		// concurrent access to the shared ssh_config state.

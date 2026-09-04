@@ -132,6 +132,14 @@ func FormatHost(host, color string) string {
 }
 
 func formatHostLocked(host, color string) string {
+	proxyJump := ssh_config.Get(host, "proxyjump")
+	proxyCommand := ssh_config.Get(host, "proxycommand")
+	isProxy := proxyJump != "" || proxyCommand != ""
+
+	if isProxy && color == "" {
+		color = "yellow"
+	}
+
 	if color != "" {
 		hostColors[host] = color
 	} else if existingColor, ok := hostColors[host]; ok {
@@ -148,6 +156,10 @@ func formatHostLocked(host, color string) string {
 		target = fmt.Sprintf("%s@%s", user, ip)
 	} else {
 		target = ip
+	}
+
+	if isProxy {
+		target = fmt.Sprintf("[yellow][proxy][-] %s", target)
 	}
 
 	prefix := "[ ] "

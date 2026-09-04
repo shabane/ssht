@@ -59,7 +59,8 @@ func main() {
 
 	tvewUtils.MainBox.
 		AddItem(component.SearchBox, 3, 0, true).
-		AddItem(component.ListBox, 0, 1, false)
+		AddItem(component.ListBox, 0, 1, false).
+		AddItem(component.Footer, 1, 0, false)
 
 	for _, host := range sshUtils.AllHosts {
 		component.AddItem(host, "", 0, func() {

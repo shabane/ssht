@@ -36,6 +36,9 @@ func RequestPing() {
 
 func init() {
 	newListBox()
+	OnSelectionChanged = func(count int) {
+		UpdateFooter(count)
+	}
 }
 
 func newListBox() *tview.List {

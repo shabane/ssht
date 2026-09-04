@@ -48,8 +48,8 @@
 
 ## 🔵 فاز ۳: مهندسی کد و معماری (Code Quality & Architecture)
 
-- [ ] **اصلاح تایپوی نام پکیج `tvewUtils`**
-  - *توضیح:* تغییر نام پکیج به `tviewUtils` جهت رعایت استانداردهای نام‌گذاری.
+- [x] **اصلاح تایپوی نام پکیج `tvewUtils`**
+  - *توضیح:* تغییر نام پکیج و مسیر به `tviewUtils` جهت رعایت استانداردهای نام‌گذاری.
 
 - [ ] **کاهش وابستگی به وضعیت عمومی (Refactoring Global State)**
   - *توضیح:* انتقال متغیرهای گلوبال پکیج‌ها (`sshUtils.AllHosts`, `tmuxUtils.SelectedHosts`) به یک ساختار حالت مرکزی (مانند `type AppState struct`) برای افزایش خوانایی و جلوگیری از race conditions.

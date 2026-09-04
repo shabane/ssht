@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -16,7 +18,10 @@ import (
 var stopPing atomic.Bool
 
 func main() {
-	sshUtils.GetAllHosts()
+	if _, err := sshUtils.GetAllHosts(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	tvewUtils.MainBox.
 		AddItem(component.SearchBox, 3, 0, true).
@@ -105,6 +110,7 @@ func main() {
 	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).
 		SetFocus(component.SearchBox).Run()
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error running ssht: %v\n", err)
+		os.Exit(1)
 	}
 }

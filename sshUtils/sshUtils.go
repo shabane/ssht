@@ -8,22 +8,29 @@ import (
 	"github.com/kevinburke/ssh_config"
 )
 
-func GetAllHosts() []string {
+func GetAllHosts() ([]string, error) {
 	var allHosts []string
 	home, err := os.UserHomeDir() //TODO: get form --flag
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("could not determine user home directory: %w", err)
 	}
 
-	fli, err := os.Open(fmt.Sprintf("%s/.ssh/config", home)) //TODO: use --list
+	configPath := fmt.Sprintf("%s/.ssh/config", home)
+	fli, err := os.Open(configPath) //TODO: use --list
 	if err != nil {
-		panic(err)
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("SSH config file not found at %s\nPlease ensure your SSH config exists or create one", configPath)
+		}
+		if os.IsPermission(err) {
+			return nil, fmt.Errorf("permission denied reading SSH config file at %s", configPath)
+		}
+		return nil, fmt.Errorf("failed to open SSH config file (%s): %w", configPath, err)
 	}
 	defer fli.Close()
 
 	config, err := ssh_config.Decode(fli)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse SSH config file (%s): %w", configPath, err)
 	}
 
 	for _, hosts := range config.Hosts {
@@ -45,7 +52,7 @@ func GetAllHosts() []string {
 			MaxHostLen = len(h)
 		}
 	}
-	return allHosts
+	return allHosts, nil
 }
 
 func SearchHostname(hosts []string, key string) []string {

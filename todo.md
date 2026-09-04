@@ -54,10 +54,10 @@
 - [x] **کاهش وابستگی به وضعیت عمومی (Refactoring Global State)**
   - *توضیح:* حذف وابستگی پکیج `component` به `tmuxUtils`، حذف متغیر سراسری `SelectedHosts` و ارسال صریح لیست هاست‌های هدف به توابع اتصال Tmux.
 
-- [ ] **نوشتن تست‌های واحد (Unit Tests)**
-  - [ ] تست برای `sshUtils.SearchHostname`
-  - [ ] تست برای `sshUtils.GetAllHosts` با فایل‌های نمونه ssh config
-  - [ ] تست برای فرمت‌بندی ردیف‌ها (`FormatHost`)
+- [x] **نوشتن تست‌های واحد (Unit Tests)**
+  - [x] تست برای `sshUtils.SearchHostname`
+  - [x] تست برای `sshUtils.GetAllHosts` با فایل‌های نمونه ssh config
+  - [x] تست برای فرمت‌بندی ردیف‌ها (`FormatHost`)
 
 - [x] **پشتیبانی کامل از دایرکتیو `Include` در SSH Config**
   - *توضیح:* پردازش بازگشتی و هوشمند دایرکتیوهای `Include` با پشتیبانی از globbing، مسیرهای نسبی، بسط `~/`، جلوگیری از حلقه بی‌نهایت و حذف موارد تکراری پیاده‌سازی شد.

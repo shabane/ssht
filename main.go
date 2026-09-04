@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"sync/atomic"
@@ -15,10 +16,43 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-var stopPing atomic.Bool
+var (
+	version  = "1.7.0"
+	stopPing atomic.Bool
+)
 
 func main() {
-	if _, err := sshUtils.GetAllHosts(); err != nil {
+	var (
+		configPath  string
+		noPing      bool
+		showVersion bool
+	)
+
+	flag.StringVar(&configPath, "c", "", "Path to custom SSH config file (shorthand)")
+	flag.StringVar(&configPath, "config", "", "Path to custom SSH config file")
+	flag.BoolVar(&noPing, "no-ping", false, "Disable reachability ping checks")
+	flag.BoolVar(&showVersion, "v", false, "Show ssht version (shorthand)")
+	flag.BoolVar(&showVersion, "version", false, "Show ssht version")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "ssht - TUI for searching SSH hosts and opening them in tmux\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n")
+		fmt.Fprintf(os.Stderr, "  ssht [options]\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(os.Stderr, "  -c, --config <path>   Path to custom SSH config file (default: ~/.ssh/config)\n")
+		fmt.Fprintf(os.Stderr, "      --no-ping         Disable reachability ping checks\n")
+		fmt.Fprintf(os.Stderr, "  -v, --version         Show ssht version\n")
+		fmt.Fprintf(os.Stderr, "  -h, --help            Show this help message\n")
+	}
+
+	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("ssht version %s\n", version)
+		os.Exit(0)
+	}
+
+	if _, err := sshUtils.GetAllHosts(configPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -33,36 +67,38 @@ func main() {
 		})
 	}
 
-	go func() {
-		var cancelPrev context.CancelFunc
-		startPing := func() {
-			// Cancel any still-running pass before launching a fresh one, so a
-			// new search supersedes the previous (possibly slow) ping instead of
-			// queuing behind it.
-			if cancelPrev != nil {
-				cancelPrev()
+	if !noPing {
+		go func() {
+			var cancelPrev context.CancelFunc
+			startPing := func() {
+				// Cancel any still-running pass before launching a fresh one, so a
+				// new search supersedes the previous (possibly slow) ping instead of
+				// queuing behind it.
+				if cancelPrev != nil {
+					cancelPrev()
+				}
+				ctx, cancel := context.WithCancel(context.Background())
+				cancelPrev = cancel
+				go Pinger(ctx)
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			cancelPrev = cancel
-			go Pinger(ctx)
-		}
 
-		// Run once immediately
-		startPing()
-		ticker := time.NewTicker(time.Second * 10)
-		defer ticker.Stop()
-		for {
-			// Re-ping on the periodic tick, or as soon as a search changes the
-			// visible host list (so filtered hosts get colored without delay).
-			select {
-			case <-ticker.C:
-			case <-component.PingNow:
+			// Run once immediately
+			startPing()
+			ticker := time.NewTicker(time.Second * 10)
+			defer ticker.Stop()
+			for {
+				// Re-ping on the periodic tick, or as soon as a search changes the
+				// visible host list (so filtered hosts get colored without delay).
+				select {
+				case <-ticker.C:
+				case <-component.PingNow:
+				}
+				if !stopPing.Load() {
+					startPing()
+				}
 			}
-			if !stopPing.Load() {
-				startPing()
-			}
-		}
-	}()
+		}()
+	}
 
 	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()

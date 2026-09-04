@@ -49,17 +49,38 @@ func GetAllHosts() []string {
 }
 
 func SearchHostname(hosts []string, key string) []string {
-	// Literal, case-insensitive substring match. Using strings.Contains rather
-	// than a regex avoids treating "." (and other regex metacharacters) as
-	// wildcards — so searching "kimia.prod.kuber" matches only that host and
-	// not unrelated names like "kimia-prod-kuber-old". It also can't panic on
-	// invalid user input.
+	// Literal, case-insensitive substring match against host alias, configured
+	// HostName (IP/domain), and configured User. Using strings.Contains avoids
+	// treating regex metacharacters as wildcards and cannot panic on input.
 	key = strings.ToLower(key)
 	var foundedHosts []string
 
 	for _, host := range hosts {
+		// Match against host alias
 		if strings.Contains(strings.ToLower(host), key) {
 			foundedHosts = append(foundedHosts, host)
+			continue
+		}
+
+		hostname := ssh_config.Get(host, "hostname")
+		user := ssh_config.Get(host, "user")
+
+		// Match against configured HostName (IP or domain)
+		if hostname != "" && strings.Contains(strings.ToLower(hostname), key) {
+			foundedHosts = append(foundedHosts, host)
+			continue
+		}
+
+		// Match against configured User
+		if user != "" && strings.Contains(strings.ToLower(user), key) {
+			foundedHosts = append(foundedHosts, host)
+			continue
+		}
+
+		// Match against user@hostname combination (e.g. "root@192.168.")
+		if user != "" && hostname != "" && strings.Contains(strings.ToLower(user+"@"+hostname), key) {
+			foundedHosts = append(foundedHosts, host)
+			continue
 		}
 	}
 	return foundedHosts

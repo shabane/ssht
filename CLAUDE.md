@@ -13,7 +13,7 @@ go build -o ssht .      # build the binary
 go run .                # run from source (requires a real ~/.ssh/config and a terminal)
 go vet ./...            # vet
 gofmt -l .              # list files needing formatting
-go test ./...           # there are currently no tests
+go test ./...           # run unit tests
 ```
 
 There is no lint config beyond `go vet`/`gofmt`. The committed `ssht` binary in the repo root is a build artifact; rebuild rather than trusting it. Releases are cross-compiled per-OS/arch and published to GitHub; `install.sh` downloads the matching prebuilt asset (`ssht-linux-amd64`, `ssht-darwin-amd64`, `ssht-darwin-arm64`).

@@ -52,4 +52,4 @@ The ping goroutine and the UI event loop run concurrently, so observe the existi
 
 ## Notes
 
-- `GetAllHosts` and `SearchHostname` `panic` on errors (missing config, bad regex) by design — the app cannot function without a config. The source has several `TODO`s (config-driven paths via flags, custom regex patterns) that are not yet implemented.
+- `GetAllHosts` returns descriptive errors on missing or unparseable configs, which `main.go` reports cleanly to stderr with `os.Exit(1)`. `SearchHostname` uses literal substring matching and cannot panic on input. The source has several `TODO`s (config-driven paths via flags) that are being implemented.

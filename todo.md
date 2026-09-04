@@ -51,8 +51,8 @@
 - [x] **اصلاح تایپوی نام پکیج `tvewUtils`**
   - *توضیح:* تغییر نام پکیج و مسیر به `tviewUtils` جهت رعایت استانداردهای نام‌گذاری.
 
-- [ ] **کاهش وابستگی به وضعیت عمومی (Refactoring Global State)**
-  - *توضیح:* انتقال متغیرهای گلوبال پکیج‌ها (`sshUtils.AllHosts`, `tmuxUtils.SelectedHosts`) به یک ساختار حالت مرکزی (مانند `type AppState struct`) برای افزایش خوانایی و جلوگیری از race conditions.
+- [x] **کاهش وابستگی به وضعیت عمومی (Refactoring Global State)**
+  - *توضیح:* حذف وابستگی پکیج `component` به `tmuxUtils`، حذف متغیر سراسری `SelectedHosts` و ارسال صریح لیست هاست‌های هدف به توابع اتصال Tmux.
 
 - [ ] **نوشتن تست‌های واحد (Unit Tests)**
   - [ ] تست برای `sshUtils.SearchHostname`

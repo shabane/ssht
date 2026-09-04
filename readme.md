@@ -48,13 +48,16 @@ This script will automatically detect your OS/architecture, download the correct
 ### shortcuts
 |  Key   |                       Task                       |
 |:------:|:------------------------------------------------:|
-| CTRL+G |                 Open Guide Menu                  |
+| Space  | Toggle selection of host ([x])                   |
+|  Tab   | Switch focus between Search and List             |
+| CTRL+S | Sort hosts (Selected & Reachable first)          |
 | CTRL+W | Connect Directly to Selected Host (No Tmux)      |
-| CTRL+A |         Open All Searched Hosts in tmux          |
-| CTRL+O | Open All Searched Hosts With Synced Pane In tmux |
-| CTRL+N |  Open All Searched Hosts In New Window On tmux   |
-| CTRL+C |                       Quit                       |
-|  Esc   |                       Back                       |
+| CTRL+A | Open Filtered/Selected Hosts in Tailed Tmux      |
+| CTRL+O | Open Filtered/Selected Hosts With Synced Panes   |
+| CTRL+N | Open Filtered/Selected Hosts In New Windows      |
+| CTRL+G | Open Guide Menu                                  |
+|  Esc   | Reset search / back                              |
+| CTRL+C | Quit                                             |
 
 ### Demos
 

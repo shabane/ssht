@@ -22,11 +22,7 @@ esac
 # Map to asset names
 case "$OS" in
     linux)
-        if [ "$ARCH" != "amd64" ]; then
-            echo "Unsupported Linux architecture: $ARCH (only amd64 is supported)"
-            exit 1
-        fi
-        ASSET="ssht-linux-amd64"
+        ASSET="ssht-linux-$ARCH"
         ;;
     darwin)
         ASSET="ssht-darwin-$ARCH"

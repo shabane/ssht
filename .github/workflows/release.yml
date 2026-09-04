@@ -20,31 +20,38 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.26'
+        go-version: '1.25'
 
     - name: Build for Linux (amd64)
       env:
         GOOS: linux
         GOARCH: amd64
-      run: go build -o ssht-linux-amd64 .
+      run: go build -ldflags="-s -w" -o ssht-linux-amd64 .
+
+    - name: Build for Linux (arm64)
+      env:
+        GOOS: linux
+        GOARCH: arm64
+      run: go build -ldflags="-s -w" -o ssht-linux-arm64 .
 
     - name: Build for macOS (amd64)
       env:
         GOOS: darwin
         GOARCH: amd64
-      run: go build -o ssht-darwin-amd64 .
+      run: go build -ldflags="-s -w" -o ssht-darwin-amd64 .
 
     - name: Build for macOS (arm64/Apple Silicon)
       env:
         GOOS: darwin
         GOARCH: arm64
-      run: go build -o ssht-darwin-arm64 .
+      run: go build -ldflags="-s -w" -o ssht-darwin-arm64 .
 
     - name: Create GitHub Release and Upload Artifacts
       uses: softprops/action-gh-release@v2
       with:
         files: |
           ssht-linux-amd64
+          ssht-linux-arm64
           ssht-darwin-amd64
           ssht-darwin-arm64
         draft: false

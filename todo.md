@@ -67,12 +67,12 @@
 
 ## 🟣 فاز ۴: اتوماسیون، انتشار و مستندات (DevOps & CI/CD)
 
-- [ ] **راه‌اندازی GitHub Actions Workflow**
-  - *توضیح:* اجرای خودکار `go test`، `go vet` و `golangci-lint` روی پول ریکوئست‌ها.
+- [x] **راه‌اندازی GitHub Actions Workflow**
+  - *توضیح:* اجرای خودکار `go test`، `go vet` و بیلد در `.github/workflows/ci.yml` برای push و PRها.
 
-- [ ] **یکپارچه‌سازی با GoReleaser**
-  - *توضیح:* کامپایل خودکار و بیلد Assetها برای Linux (amd64, arm64) و macOS (Intel, Apple Silicon) هنگام زدن تگ نسخه جدید.
+- [x] **یکپارچه‌سازی با GoReleaser**
+  - *توضیح:* ایجاد فایل پیکربندی `.goreleaser.yaml` جهت بیلد و انتشار خودکار باینری‌ها برای معماری‌های x86_64 و ARM64 در لینوکس و مک.
 
-- [ ] **بهبود اسناد و متن README**
-  - [ ] اصلاح تایپوها (`symontiniusly` -> `simultaneously`, `guaranty` -> `guarantee`, `syncronize` -> `synchronize`)
-  - [ ] افزودن راهنمای ساخت از سورس و امکانات جدید به README
+- [x] **بهبود اسناد و متن README**
+  - [x] اصلاح تایپوها (`symontiniusly` -> `simultaneously`, `guaranty` -> `guarantee`, `syncronize` -> `synchronize`)
+  - [x] افزودن راهنمای ساخت از سورس و امکانات جدید به README

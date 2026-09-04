@@ -3,29 +3,32 @@
 ![ssht demo](assets/demo.gif)
 
 **ssht** or **ssh-tmux**.
-As a DevOps engineer, every day i used to
-open a *tmux*, create many *panes* and in each of pane i *ssh*
-to a host then i set `syncronize-pane on` to use all the
+As a DevOps engineer, every day I used to
+open a *tmux*, create many *panes*, and in each pane *ssh*
+to a host, then set `synchronize-panes on` to run commands across all
 panes at once.
 
-Then I get familiar with [sshs](https://terminaltrove.com/feed/sshs/)
-tool. it's just a TUI over
-[*ssh_config*](https://man.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5&manpath=OpenBSD+3.4) file, which let you
-search and connect to your ssh host.
+Then I became familiar with the [sshs](https://terminaltrove.com/feed/sshs/)
+tool — a great TUI over the
+[*ssh_config*](https://man.freebsd.org/cgi/man.cgi?query=ssh_config&sektion=5&manpath=OpenBSD+3.4) file that lets you
+search and connect to your SSH hosts.
 
-I combine this two idea, which the result came out
-with `ssht`, a TUI that let you search between your ssh hosts 
-and then open all the hosts that you searched
-in a tmux session. or you can connect to one host.
+I combined these two ideas into **`ssht`**, a fast and intuitive TUI that lets you search through your SSH hosts,
+optionally multi-select specific servers with `Space`, and connect to one or batch-open them
+in a tmux session (or connect directly without tmux).
 
 ### Features
-- searchable (case-insensitive substring match over your ssh hosts, configured IPs, and users)
-- ssh in a tmux session (tailed panes, synced panes, or separate windows)
-- connect directly to a single host without tmux
-- shows each host's configured user and IP (`[user@]HostName`) next to its alias
-- use red and green color for reachable or unreachable hosts
-- live reachability check that refreshes as you search, running up to 22 hosts in parallel so big lists stay fast
-- custom config support via `-c / --config` and optional `--no-ping` mode
+- **Fast Search:** case-insensitive substring match across host aliases, configured IPs, users, and ProxyJump bastions
+- **Multi-Selection:** toggle selection on hosts with `Space` to open only chosen servers
+- **Smart Sorting:** sort with `CTRL+S` (selected & reachable hosts float to top, unreachable to bottom)
+- **Batch Tmux Sessions:** open in tiled panes (`CTRL+A`), synchronized panes (`CTRL+O`), or separate windows (`CTRL+N`)
+- **Direct Connect:** connect to a single host directly without tmux (`Enter` or `CTRL+W`)
+- **Informative List:** displays each host's configured user and IP (`[user@]HostName`) next to its alias
+- **ProxyJump / Bastion Support:** detects proxy/bastion configs, labels them `[proxy]`, and avoids false unreachable alerts
+- **Full `Include` Support:** recursively parses `Include` directives with wildcards and relative paths
+- **Live Reachability Check:** concurrent TCP pinger (up to 22 hosts in parallel) with green/red status coloring
+- **CLI Options:** custom config file via `-c / --config` and optional `--no-ping` flag
+- **Bottom Status Bar:** always-visible shortcuts guide with live selection counter
 
 ### Usage & CLI Options
 ```text
@@ -73,6 +76,13 @@ This script will automatically detect your OS/architecture, download the correct
 #### 4. Connect to All in New Windows (`CTRL+N`)
 ![Connect All Windows](assets/connect_all_windows.gif)
 
+#### Building from Source
+```bash
+git clone https://github.com/shabane/ssht.git
+cd ssht
+go build -o ssht .
+```
+
 ---
 
-> I guaranty that its work on my machine.
+> I guarantee that it works on my machine.

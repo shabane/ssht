@@ -13,7 +13,12 @@ import (
 
 var ListBox *tview.List
 var visibleHosts []string
+var selectedHostsMap = make(map[string]bool)
+var hostColors = make(map[string]string)
 var mu sync.Mutex
+
+// OnSelectionChanged is an optional hook called when the selected count changes.
+var OnSelectionChanged func(count int)
 
 // PingNow signals the ping goroutine to re-check the currently visible hosts
 // immediately, instead of waiting for the next periodic tick.
@@ -53,19 +58,83 @@ func Clear() {
 func AddItem(host string, secondaryText string, shortcut rune, selectFunc func()) {
 	mu.Lock()
 	defer mu.Unlock()
-	// Render the alias + its configured IP straight away (uncolored). The IP is
-	// static config data, so it must not depend on the pinger — otherwise it
-	// would be missing until a host is pinged, and absent entirely for hosts
-	// that never become reachable. The pinger only recolors the alias later.
-	ListBox.AddItem(FormatHost(host, ""), secondaryText, shortcut, selectFunc)
+	color := hostColors[host]
+	ListBox.AddItem(formatHostLocked(host, color), secondaryText, shortcut, selectFunc)
 	visibleHosts = append(visibleHosts, host)
 }
 
-// FormatHost builds a list label "alias | [user@]ip", where ip is the host's
-// configured HostName from ssh_config (or "n/a" if unset). The alias is padded
-// to the longest alias width so the IP column lines up. color is a tview color
-// name (e.g. "green"/"red") applied to the alias, or "" for the default color.
+func ToggleSelect(index int) {
+	mu.Lock()
+	defer mu.Unlock()
+	if index < 0 || index >= len(visibleHosts) {
+		return
+	}
+	host := visibleHosts[index]
+	if selectedHostsMap[host] {
+		delete(selectedHostsMap, host)
+	} else {
+		selectedHostsMap[host] = true
+	}
+	color := hostColors[host]
+	ListBox.SetItemText(index, formatHostLocked(host, color), "")
+	count := len(selectedHostsMap)
+	if OnSelectionChanged != nil {
+		go OnSelectionChanged(count)
+	}
+}
+
+func GetSelectedHosts() []string {
+	mu.Lock()
+	defer mu.Unlock()
+	var res []string
+	seen := make(map[string]bool)
+	for _, h := range visibleHosts {
+		if selectedHostsMap[h] {
+			res = append(res, h)
+			seen[h] = true
+		}
+	}
+	for _, h := range sshUtils.AllHosts {
+		if selectedHostsMap[h] && !seen[h] {
+			res = append(res, h)
+		}
+	}
+	return res
+}
+
+func GetSelectedCount() int {
+	mu.Lock()
+	defer mu.Unlock()
+	return len(selectedHostsMap)
+}
+
+func ClearSelection() {
+	mu.Lock()
+	defer mu.Unlock()
+	selectedHostsMap = make(map[string]bool)
+	for i, h := range visibleHosts {
+		color := hostColors[h]
+		ListBox.SetItemText(i, formatHostLocked(h, color), "")
+	}
+	if OnSelectionChanged != nil {
+		go OnSelectionChanged(0)
+	}
+}
+
+// FormatHost builds a list label "[x] alias | [user@]ip".
 func FormatHost(host, color string) string {
+	mu.Lock()
+	defer mu.Unlock()
+	return formatHostLocked(host, color)
+}
+
+func formatHostLocked(host, color string) string {
+	if color != "" {
+		hostColors[host] = color
+	} else if existingColor, ok := hostColors[host]; ok {
+		color = existingColor
+	}
+
 	ip := ssh_config.Get(host, "hostname")
 	if ip == "" {
 		ip = "n/a"
@@ -78,13 +147,16 @@ func FormatHost(host, color string) string {
 		target = ip
 	}
 
-	// Pad the raw alias first; color tags are zero-width, so wrapping the
-	// already-padded alias keeps the IP column aligned.
+	prefix := "[ ] "
+	if selectedHostsMap[host] {
+		prefix = "[#42f5aa][x][-] "
+	}
+
 	alias := fmt.Sprintf("%-*s", sshUtils.MaxHostLen, host)
 	if color != "" {
 		alias = fmt.Sprintf("[%s]%s[-]", color, alias)
 	}
-	return fmt.Sprintf("%s | %s", alias, target)
+	return fmt.Sprintf("%s%s | %s", prefix, alias, target)
 }
 
 func GetVisibleHosts() []string {

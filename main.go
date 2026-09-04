@@ -103,11 +103,11 @@ func main() {
 	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()
 		if keyName == "Ctrl+A" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane)
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane, component.GetSelectedHosts())
 		} else if keyName == "Ctrl+O" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane)
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, component.GetSelectedHosts())
 		} else if keyName == "Ctrl+N" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window)
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window, component.GetSelectedHosts())
 		} else if keyName == "Ctrl+W" {
 			if !stopPing.Load() {
 				index := component.ListBox.GetCurrentItem()
@@ -115,6 +115,17 @@ func main() {
 					tmuxUtils.DirectConnect(host)
 				}
 			}
+		} else if keyName == "Space" && tvewUtils.App.GetFocus() == component.ListBox {
+			index := component.ListBox.GetCurrentItem()
+			component.ToggleSelect(index)
+			return nil
+		} else if keyName == "Tab" {
+			if tvewUtils.App.GetFocus() == component.SearchBox {
+				tvewUtils.App.SetFocus(component.ListBox)
+			} else {
+				tvewUtils.App.SetFocus(component.SearchBox)
+			}
+			return nil
 		} else if keyName == "Esc" {
 			stopPing.Store(false)
 			// Clearing the search text triggers the search handler, which
@@ -124,12 +135,14 @@ func main() {
 			stopPing.Store(true)
 			component.Clear()
 			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
+			component.ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
+			component.ListBox.AddItem("Space", "Toggle Selection ([x]) on List", 0, nil)
 			component.ListBox.AddItem("Esc", "Back", 0, nil)
 			component.ListBox.AddItem("Enter", "Open Selected Host", 0, nil)
 			component.ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
-			component.ListBox.AddItem("CTRL+A", "Connect To All Filtered Hosts In Tailed Mode", 0, nil)
-			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered Hosts In Synchronized Pane", 0, nil)
-			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered Hosts Each In New Window", 0, nil)
+			component.ListBox.AddItem("CTRL+A", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
+			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
+			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)
 			component.ListBox.AddItem("CTRL+C", "Quit", 0, nil)
 		} else if keyName == "Down" || keyName == "Up" {
 			tvewUtils.App.SetFocus(component.ListBox)

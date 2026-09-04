@@ -104,14 +104,17 @@ func OpenOneInTmux(hostname string) {
 	})
 }
 
-func OpenSelectedInTmux(mode Mode) {
-	// Fall back to every host when nothing is filtered, and bail out if there
-	// are still no hosts — otherwise SelectedHosts[0] / SelectedHosts[1:] below
-	// would panic on an empty slice.
-	if len(SelectedHosts) == 0 {
-		SelectedHosts = sshUtils.AllHosts
+func OpenSelectedInTmux(mode Mode, explicitHosts ...[]string) {
+	var targetHosts []string
+	if len(explicitHosts) > 0 && len(explicitHosts[0]) > 0 {
+		targetHosts = explicitHosts[0]
+	} else {
+		if len(SelectedHosts) == 0 {
+			SelectedHosts = sshUtils.AllHosts
+		}
+		targetHosts = SelectedHosts
 	}
-	if len(SelectedHosts) == 0 {
+	if len(targetHosts) == 0 {
 		return
 	}
 
@@ -122,27 +125,27 @@ func OpenSelectedInTmux(mode Mode) {
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tvewUtils.App.Suspend(func() {
-			openExtraHosts(currentTmuxId, mode)
-			runSSH(SelectedHosts[0])
+			openExtraHosts(currentTmuxId, mode, targetHosts)
+			runSSH(targetHosts[0])
 		})
 		return
 	}
 
-	SessionCreator(SelectedHosts[0])
+	SessionCreator(targetHosts[0])
 	tvewUtils.App.Suspend(func() {
 		defer func() {
 			tmuxId = ""
 		}()
 
-		openExtraHosts(tmuxId, mode)
+		openExtraHosts(tmuxId, mode, targetHosts)
 		attachToSession(tmuxId)
 	})
 }
 
-// openExtraHosts opens SelectedHosts[1:] in the tmux session/window identified
-// by target. SelectedHosts[0] is expected to already be running in the session.
-func openExtraHosts(target string, mode Mode) {
-	for _, host := range SelectedHosts[1:] {
+// openExtraHosts opens hosts[1:] in the tmux session/window identified
+// by target. hosts[0] is expected to already be running in the session.
+func openExtraHosts(target string, mode Mode, hosts []string) {
+	for _, host := range hosts[1:] {
 		var splitCmd *exec.Cmd
 		sshArgs := append([]string{"ssh"}, buildSSHArgs(host)...)
 		if mode == Window {

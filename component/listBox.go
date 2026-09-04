@@ -61,7 +61,7 @@ func AddItem(host string, secondaryText string, shortcut rune, selectFunc func()
 	visibleHosts = append(visibleHosts, host)
 }
 
-// FormatHost builds a list label "alias | ip", where ip is the host's
+// FormatHost builds a list label "alias | [user@]ip", where ip is the host's
 // configured HostName from ssh_config (or "n/a" if unset). The alias is padded
 // to the longest alias width so the IP column lines up. color is a tview color
 // name (e.g. "green"/"red") applied to the alias, or "" for the default color.
@@ -70,13 +70,21 @@ func FormatHost(host, color string) string {
 	if ip == "" {
 		ip = "n/a"
 	}
+	user := ssh_config.Get(host, "user")
+	var target string
+	if user != "" {
+		target = fmt.Sprintf("%s@%s", user, ip)
+	} else {
+		target = ip
+	}
+
 	// Pad the raw alias first; color tags are zero-width, so wrapping the
 	// already-padded alias keeps the IP column aligned.
 	alias := fmt.Sprintf("%-*s", sshUtils.MaxHostLen, host)
 	if color != "" {
 		alias = fmt.Sprintf("[%s]%s[-]", color, alias)
 	}
-	return fmt.Sprintf("%s | %s", alias, ip)
+	return fmt.Sprintf("%s | %s", alias, target)
 }
 
 func GetVisibleHosts() []string {

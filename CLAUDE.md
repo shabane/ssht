@@ -24,7 +24,7 @@ Running the app requires an interactive TTY and a populated `~/.ssh/config`; it 
 
 The app is a single global UI tree mutated by event handlers — there is no central state struct. Packages communicate through exported package-level variables, not dependency injection. Key globals:
 
-- `tvewUtils.App` / `tvewUtils.MainBox` — the singleton tview application and root flex layout (SearchBox on top, ListBox below).
+- `tviewUtils.App` / `tviewUtils.MainBox` — the singleton tview application and root flex layout (SearchBox on top, ListBox below).
 - `sshUtils.AllHosts` — every host parsed from `~/.ssh/config` (the `*` wildcard entry is skipped). Populated once at startup by `GetAllHosts()`.
 - `tmuxUtils.SelectedHosts` — the hosts to act on for "connect all" commands. Kept in sync with the visible (filtered) list by the search box's changed handler.
 - `component.ListBox` + `component.visibleHosts` — the rendered list and a parallel slice tracking what is currently shown.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 	"ssht/component"
-	"ssht/tvewUtils"
+	"ssht/tviewUtils"
 	"sync"
 	"time"
 
@@ -44,7 +44,7 @@ loop:
 		if proxyJump != "" || proxyCommand != "" {
 			idx := index
 			h := host
-			tvewUtils.App.QueueUpdateDraw(func() {
+			tviewUtils.App.QueueUpdateDraw(func() {
 				if currentHost, ok := component.GetHost(idx); ok && currentHost == h {
 					component.ListBox.SetItemText(idx, component.FormatHost(h, "yellow"), "")
 				}
@@ -100,7 +100,7 @@ loop:
 			// Update UI thread-safely. FormatHost (which reads ssh_config) runs
 			// inside the closure on tview's single event loop, so the IP lookup
 			// stays serialized. Only the alias color reflects reachability.
-			tvewUtils.App.QueueUpdateDraw(func() {
+			tviewUtils.App.QueueUpdateDraw(func() {
 				// Verify index is still valid and host unchanged before updating.
 				if currentHost, ok := component.GetHost(i); ok && currentHost == host {
 					component.ListBox.SetItemText(i, component.FormatHost(host, color), "")

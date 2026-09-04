@@ -1,4 +1,4 @@
-package tvewUtils
+package tviewUtils
 
 import (
 	"github.com/rivo/tview"

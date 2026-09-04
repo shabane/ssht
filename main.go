@@ -11,7 +11,7 @@ import (
 	"ssht/component"
 	"ssht/sshUtils"
 	"ssht/tmuxUtils"
-	"ssht/tvewUtils"
+	"ssht/tviewUtils"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tvewUtils.MainBox.
+	tviewUtils.MainBox.
 		AddItem(component.SearchBox, 3, 0, true).
 		AddItem(component.ListBox, 0, 1, false).
 		AddItem(component.Footer, 1, 0, false)
@@ -105,7 +105,7 @@ func main() {
 		}()
 	}
 
-	tvewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	tviewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()
 		if keyName == "Ctrl+A" {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane, component.GetSelectedHosts())
@@ -123,15 +123,15 @@ func main() {
 					tmuxUtils.DirectConnect(host)
 				}
 			}
-		} else if keyName == "Space" && tvewUtils.App.GetFocus() == component.ListBox {
+		} else if keyName == "Space" && tviewUtils.App.GetFocus() == component.ListBox {
 			index := component.ListBox.GetCurrentItem()
 			component.ToggleSelect(index)
 			return nil
 		} else if keyName == "Tab" {
-			if tvewUtils.App.GetFocus() == component.SearchBox {
-				tvewUtils.App.SetFocus(component.ListBox)
+			if tviewUtils.App.GetFocus() == component.SearchBox {
+				tviewUtils.App.SetFocus(component.ListBox)
 			} else {
-				tvewUtils.App.SetFocus(component.SearchBox)
+				tviewUtils.App.SetFocus(component.SearchBox)
 			}
 			return nil
 		} else if keyName == "Esc" {
@@ -154,18 +154,18 @@ func main() {
 			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)
 			component.ListBox.AddItem("CTRL+C", "Quit", 0, nil)
 		} else if keyName == "Down" || keyName == "Up" {
-			tvewUtils.App.SetFocus(component.ListBox)
+			tviewUtils.App.SetFocus(component.ListBox)
 		} else if keyName != "Enter" {
 			component.SearchBox.SetText(component.SearchBox.GetText())
-			tvewUtils.App.SetFocus(component.SearchBox)
+			tviewUtils.App.SetFocus(component.SearchBox)
 		} else if keyName == "Enter" {
-			tvewUtils.App.SetFocus(component.ListBox)
+			tviewUtils.App.SetFocus(component.ListBox)
 		}
 
 		return event
 	})
 
-	err := tvewUtils.App.SetRoot(tvewUtils.MainBox, true).
+	err := tviewUtils.App.SetRoot(tviewUtils.MainBox, true).
 		SetFocus(component.SearchBox).Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error running ssht: %v\n", err)

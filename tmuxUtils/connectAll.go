@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"ssht/sshUtils"
-	"ssht/tvewUtils"
+	"ssht/tviewUtils"
 	"strconv"
 	"strings"
 	"time"
@@ -64,14 +64,14 @@ func runSSH(hostname string) {
 }
 
 func DirectConnect(hostname string) {
-	tvewUtils.App.Suspend(func() {
+	tviewUtils.App.Suspend(func() {
 		runSSH(hostname)
 	})
 }
 
 func EnsureTmux() bool {
 	if _, err := exec.LookPath("tmux"); err != nil {
-		tvewUtils.App.Suspend(func() {
+		tviewUtils.App.Suspend(func() {
 			fmt.Fprintln(os.Stderr, "Error: 'tmux' is not installed or not found in your PATH.")
 			fmt.Fprintln(os.Stderr, "Please install tmux to use this feature (e.g. 'brew install tmux' or 'sudo apt install tmux').")
 			fmt.Println("\nPress Enter to return...")
@@ -95,7 +95,7 @@ func OpenOneInTmux(hostname string) {
 	}
 
 	SessionCreator(hostname)
-	tvewUtils.App.Suspend(func() {
+	tviewUtils.App.Suspend(func() {
 		defer func() {
 			tmuxId = ""
 		}()
@@ -124,7 +124,7 @@ func OpenSelectedInTmux(mode Mode, explicitHosts ...[]string) {
 
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
-		tvewUtils.App.Suspend(func() {
+		tviewUtils.App.Suspend(func() {
 			openExtraHosts(currentTmuxId, mode, targetHosts)
 			runSSH(targetHosts[0])
 		})
@@ -132,7 +132,7 @@ func OpenSelectedInTmux(mode Mode, explicitHosts ...[]string) {
 	}
 
 	SessionCreator(targetHosts[0])
-	tvewUtils.App.Suspend(func() {
+	tviewUtils.App.Suspend(func() {
 		defer func() {
 			tmuxId = ""
 		}()

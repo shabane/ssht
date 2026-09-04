@@ -62,10 +62,14 @@ func main() {
 		AddItem(component.ListBox, 0, 1, false).
 		AddItem(component.Footer, 1, 0, false)
 
-	for _, host := range sshUtils.AllHosts {
-		component.AddItem(host, "", 0, func() {
+	component.DefaultSelectFunc = func(host string) func() {
+		return func() {
 			tmuxUtils.OpenOneInTmux(host)
-		})
+		}
+	}
+
+	for _, host := range sshUtils.AllHosts {
+		component.AddItem(host, "", 0, component.DefaultSelectFunc(host))
 	}
 
 	if !noPing {
@@ -109,6 +113,9 @@ func main() {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, component.GetSelectedHosts())
 		} else if keyName == "Ctrl+N" {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window, component.GetSelectedHosts())
+		} else if keyName == "Ctrl+S" {
+			component.SortVisibleHosts()
+			return nil
 		} else if keyName == "Ctrl+W" {
 			if !stopPing.Load() {
 				index := component.ListBox.GetCurrentItem()
@@ -138,6 +145,7 @@ func main() {
 			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
 			component.ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
 			component.ListBox.AddItem("Space", "Toggle Selection ([x]) on List", 0, nil)
+			component.ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
 			component.ListBox.AddItem("Esc", "Back", 0, nil)
 			component.ListBox.AddItem("Enter", "Open Selected Host", 0, nil)
 			component.ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)

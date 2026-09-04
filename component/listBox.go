@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 
 	"ssht/sshUtils"
@@ -16,6 +18,9 @@ var visibleHosts []string
 var selectedHostsMap = make(map[string]bool)
 var hostColors = make(map[string]string)
 var mu sync.Mutex
+
+// DefaultSelectFunc produces the selection callback for a given host.
+var DefaultSelectFunc func(host string) func()
 
 // OnSelectionChanged is an optional hook called when the selected count changes.
 var OnSelectionChanged func(count int)
@@ -189,4 +194,50 @@ func GetHost(index int) (string, bool) {
 		return "", false
 	}
 	return visibleHosts[index], true
+}
+
+// SortVisibleHosts sorts the visible list putting selected hosts first, reachable
+// (green) next, proxy (yellow) next, pending next, and unreachable (red) last.
+func SortVisibleHosts() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	statusPriority := func(h string) int {
+		if selectedHostsMap[h] {
+			return 0
+		}
+		c := hostColors[h]
+		switch c {
+		case "green":
+			return 1
+		case "yellow":
+			return 2
+		case "":
+			return 3
+		case "red":
+			return 4
+		default:
+			return 3
+		}
+	}
+
+	sort.SliceStable(visibleHosts, func(i, j int) bool {
+		pi := statusPriority(visibleHosts[i])
+		pj := statusPriority(visibleHosts[j])
+		if pi != pj {
+			return pi < pj
+		}
+		return strings.ToLower(visibleHosts[i]) < strings.ToLower(visibleHosts[j])
+	})
+
+	ListBox.Clear()
+	for _, h := range visibleHosts {
+		host := h
+		color := hostColors[host]
+		var fn func()
+		if DefaultSelectFunc != nil {
+			fn = DefaultSelectFunc(host)
+		}
+		ListBox.AddItem(formatHostLocked(host, color), "", 0, fn)
+	}
 }

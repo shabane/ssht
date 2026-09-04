@@ -34,5 +34,5 @@ func UpdateFooter(selectedCount int) {
 	if selectedCount > 0 {
 		prefix = fmt.Sprintf("[#42f5aa](%d selected)[-] | ", selectedCount)
 	}
-	Footer.SetText(prefix + "[yellow]Enter:[-] Open | [yellow]Space:[-] Select | [yellow]Ctrl+O:[-] Sync | [yellow]Ctrl+A:[-] All | [yellow]Ctrl+W:[-] Direct | [yellow]Tab:[-] Switch | [yellow]Ctrl+G:[-] Guide")
+	Footer.SetText(prefix + "[yellow]Enter:[-] Open | [yellow]Space:[-] Select | [yellow]Ctrl+S:[-] Sort | [yellow]Ctrl+O:[-] Sync | [yellow]Ctrl+A:[-] All | [yellow]Ctrl+W:[-] Direct | [yellow]Tab:[-] Switch | [yellow]Ctrl+G:[-] Guide")
 }

@@ -10,7 +10,6 @@ import (
 )
 
 func GetAllHosts(customPath string) ([]string, error) {
-	var allHosts []string
 	configPath := customPath
 	if configPath == "" {
 		home, err := os.UserHomeDir()
@@ -35,8 +34,7 @@ func GetAllHosts(customPath string) ([]string, error) {
 		})
 	}
 
-	fli, err := os.Open(configPath)
-	if err != nil {
+	if _, err := os.Stat(configPath); err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("SSH config file not found at %s\nPlease ensure your SSH config exists or create one", configPath)
 		}
@@ -45,33 +43,95 @@ func GetAllHosts(customPath string) ([]string, error) {
 		}
 		return nil, fmt.Errorf("failed to open SSH config file (%s): %w", configPath, err)
 	}
-	defer fli.Close()
 
-	config, err := ssh_config.Decode(fli)
+	seenFiles := make(map[string]bool)
+	rawHosts, err := parseConfigFile(configPath, 0, seenFiles)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse SSH config file (%s): %w", configPath, err)
 	}
 
-	for _, hosts := range config.Hosts {
-		for _, host := range hosts.Patterns {
-			pattern := host.String()
-			// Skip glob/negated patterns (e.g. "*", "kimia.prod.*", "!host").
-			// These are not concrete hostnames and cannot be connected to.
-			if strings.ContainsAny(pattern, "*?!") {
-				continue
-			}
-			allHosts = append(allHosts, pattern)
+	var uniqueHosts []string
+	seenHost := make(map[string]bool)
+	for _, h := range rawHosts {
+		if !seenHost[h] {
+			seenHost[h] = true
+			uniqueHosts = append(uniqueHosts, h)
 		}
 	}
 
-	AllHosts = allHosts
+	AllHosts = uniqueHosts
 	MaxHostLen = 0
-	for _, h := range allHosts {
+	for _, h := range uniqueHosts {
 		if len(h) > MaxHostLen {
 			MaxHostLen = len(h)
 		}
 	}
-	return allHosts, nil
+	return uniqueHosts, nil
+}
+
+func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]string, error) {
+	if depth > 5 {
+		return nil, nil
+	}
+	if seenFiles[path] {
+		return nil, nil
+	}
+	seenFiles[path] = true
+
+	fli, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer fli.Close()
+
+	config, err := ssh_config.Decode(fli)
+	if err != nil {
+		return nil, err
+	}
+
+	var hosts []string
+	configDir := filepath.Dir(path)
+
+	for _, hostBlock := range config.Hosts {
+		for _, pat := range hostBlock.Patterns {
+			pattern := pat.String()
+			if strings.ContainsAny(pattern, "*?!") {
+				continue
+			}
+			hosts = append(hosts, pattern)
+		}
+
+		for _, node := range hostBlock.Nodes {
+			if inc, ok := node.(*ssh_config.Include); ok {
+				incStr := strings.TrimSpace(inc.String())
+				parts := strings.Fields(incStr)
+				if len(parts) > 1 && strings.EqualFold(parts[0], "include") {
+					for _, targetPattern := range parts[1:] {
+						if strings.HasPrefix(targetPattern, "~/") {
+							home, err := os.UserHomeDir()
+							if err == nil {
+								targetPattern = filepath.Join(home, targetPattern[2:])
+							}
+						} else if !filepath.IsAbs(targetPattern) {
+							targetPattern = filepath.Join(configDir, targetPattern)
+						}
+
+						matches, err := filepath.Glob(targetPattern)
+						if err != nil {
+							continue
+						}
+						for _, match := range matches {
+							subHosts, err := parseConfigFile(match, depth+1, seenFiles)
+							if err == nil {
+								hosts = append(hosts, subHosts...)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return hosts, nil
 }
 
 func SearchHostname(hosts []string, key string) []string {

@@ -24,16 +24,15 @@ Running the app requires an interactive TTY and a populated `~/.ssh/config`; it 
 
 The app is a single global UI tree mutated by event handlers — there is no central state struct. Packages communicate through exported package-level variables, not dependency injection. Key globals:
 
-- `tviewUtils.App` / `tviewUtils.MainBox` — the singleton tview application and root flex layout (SearchBox on top, ListBox below).
+- `tviewUtils.App` / `tviewUtils.MainBox` — the singleton tview application and root flex layout (SearchBox on top, ListBox below, Footer at bottom).
 - `sshUtils.AllHosts` — every host parsed from `~/.ssh/config` (the `*` wildcard entry is skipped). Populated once at startup by `GetAllHosts()`.
-- `tmuxUtils.SelectedHosts` — the hosts to act on for "connect all" commands. Kept in sync with the visible (filtered) list by the search box's changed handler.
 - `component.ListBox` + `component.visibleHosts` — the rendered list and a parallel slice tracking what is currently shown.
 
 ### Control flow
 
 1. `main.go` parses hosts, builds the layout, seeds the list with all hosts, starts the ping goroutine, and installs a single global `SetInputCapture` keybinding handler.
-2. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which clears and refills the list via regex substring match (`sshUtils.SearchHostname`) and rebuilds `SelectedHosts`.
-3. Keybindings in `main.go` map to tmux actions: `Ctrl+W` direct ssh (no tmux), `Ctrl+A`/`Ctrl+O`/`Ctrl+N` open all filtered hosts in tmux as tailed panes / synced panes / separate windows, `Ctrl+G` shows an in-list help menu, `Esc` resets the search and list.
+2. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which clears and refills the list via substring match (`sshUtils.SearchHostname`).
+3. Keybindings in `main.go` map to tmux actions: `Ctrl+W` direct ssh (no tmux), `Ctrl+A`/`Ctrl+O`/`Ctrl+N` open selected (or filtered) hosts in tmux as tailed panes / synced panes / separate windows, `Space` toggles multi-selection, `Tab` toggles focus, `Ctrl+S` sorts by reachability, `Ctrl+G` shows an in-list help menu, `Esc` resets the search and list.
 
 ### tmux integration (`tmuxUtils/connectAll.go`)
 

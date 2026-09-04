@@ -107,12 +107,20 @@ func main() {
 
 	tviewUtils.MainBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()
+		getActiveHosts := func() []string {
+			hosts := component.GetSelectedHosts()
+			if len(hosts) == 0 {
+				hosts = component.GetVisibleHosts()
+			}
+			return hosts
+		}
+
 		if keyName == "Ctrl+A" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane, component.GetSelectedHosts())
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane, getActiveHosts())
 		} else if keyName == "Ctrl+O" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, component.GetSelectedHosts())
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, getActiveHosts())
 		} else if keyName == "Ctrl+N" {
-			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window, component.GetSelectedHosts())
+			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window, getActiveHosts())
 		} else if keyName == "Ctrl+S" {
 			component.SortVisibleHosts()
 			return nil

@@ -104,16 +104,7 @@ func OpenOneInTmux(hostname string) {
 	})
 }
 
-func OpenSelectedInTmux(mode Mode, explicitHosts ...[]string) {
-	var targetHosts []string
-	if len(explicitHosts) > 0 && len(explicitHosts[0]) > 0 {
-		targetHosts = explicitHosts[0]
-	} else {
-		if len(SelectedHosts) == 0 {
-			SelectedHosts = sshUtils.AllHosts
-		}
-		targetHosts = SelectedHosts
-	}
+func OpenSelectedInTmux(mode Mode, targetHosts []string) {
 	if len(targetHosts) == 0 {
 		return
 	}

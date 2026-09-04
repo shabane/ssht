@@ -1,10 +1,10 @@
 package component
 
 import (
+	"ssht/sshUtils"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"ssht/sshUtils"
-	"ssht/tmuxUtils"
 )
 
 var SearchBox *tview.InputField
@@ -27,15 +27,14 @@ func newSearchBox() *tview.InputField {
 func init() {
 	SearchBox.SetChangedFunc(func(text string) {
 		Clear()
-		tmuxUtils.SelectedHosts = []string{}
 		for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
-			AddItem(host, "", 0, func() {
-				tmuxUtils.OpenOneInTmux(host)
-			})
-			tmuxUtils.SelectedHosts = append(tmuxUtils.SelectedHosts, host)
+			h := host
+			var fn func()
+			if DefaultSelectFunc != nil {
+				fn = DefaultSelectFunc(h)
+			}
+			AddItem(h, "", 0, fn)
 		}
-		// The visible list just changed; re-check reachability right away rather
-		// than waiting up to a full tick.
 		RequestPing()
 	})
 }

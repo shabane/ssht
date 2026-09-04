@@ -58,10 +58,28 @@ func DirectConnect(hostname string) {
 	})
 }
 
+func EnsureTmux() bool {
+	if _, err := exec.LookPath("tmux"); err != nil {
+		tvewUtils.App.Suspend(func() {
+			fmt.Fprintln(os.Stderr, "Error: 'tmux' is not installed or not found in your PATH.")
+			fmt.Fprintln(os.Stderr, "Please install tmux to use this feature (e.g. 'brew install tmux' or 'sudo apt install tmux').")
+			fmt.Println("\nPress Enter to return...")
+			var discard string
+			fmt.Scanln(&discard)
+		})
+		return false
+	}
+	return true
+}
+
 func OpenOneInTmux(hostname string) {
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		DirectConnect(hostname)
+		return
+	}
+
+	if !EnsureTmux() {
 		return
 	}
 
@@ -83,6 +101,10 @@ func OpenSelectedInTmux(mode Mode) {
 		SelectedHosts = sshUtils.AllHosts
 	}
 	if len(SelectedHosts) == 0 {
+		return
+	}
+
+	if !EnsureTmux() {
 		return
 	}
 

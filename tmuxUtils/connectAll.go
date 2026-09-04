@@ -24,6 +24,15 @@ func getCurrentTmuxSession() string {
 	return strings.TrimSpace(string(out))
 }
 
+func buildSSHArgs(hostname string) []string {
+	var args []string
+	if sshUtils.CustomConfigPath != "" {
+		args = append(args, "-F", sshUtils.CustomConfigPath)
+	}
+	args = append(args, hostname)
+	return args
+}
+
 func SessionCreator(hostname string) {
 	if tmuxId == "" {
 		tmuxId = "ssht-" + strconv.Itoa(int(time.Now().Unix()))
@@ -31,7 +40,9 @@ func SessionCreator(hostname string) {
 			log.Fatal(err)
 		}
 
-		initCmd := exec.Command("tmux", "new-session", "-d", "-s", tmuxId, "ssh", hostname)
+		sshArgs := append([]string{"ssh"}, buildSSHArgs(hostname)...)
+		tmuxArgs := append([]string{"new-session", "-d", "-s", tmuxId}, sshArgs...)
+		initCmd := exec.Command("tmux", tmuxArgs...)
 		if err := initCmd.Run(); err != nil {
 			fmt.Printf("Error creating session: %v\n", err)
 			return
@@ -40,7 +51,7 @@ func SessionCreator(hostname string) {
 }
 
 func runSSH(hostname string) {
-	cmd := exec.Command("ssh", hostname)
+	cmd := exec.Command("ssh", buildSSHArgs(hostname)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -133,10 +144,13 @@ func OpenSelectedInTmux(mode Mode) {
 func openExtraHosts(target string, mode Mode) {
 	for _, host := range SelectedHosts[1:] {
 		var splitCmd *exec.Cmd
+		sshArgs := append([]string{"ssh"}, buildSSHArgs(host)...)
 		if mode == Window {
-			splitCmd = exec.Command("tmux", "new-window", "-t", target, "-n", host, "ssh", host)
+			cmdArgs := append([]string{"new-window", "-t", target, "-n", host}, sshArgs...)
+			splitCmd = exec.Command("tmux", cmdArgs...)
 		} else {
-			splitCmd = exec.Command("tmux", "split-window", "-f", "-t", target, "ssh", host)
+			cmdArgs := append([]string{"split-window", "-f", "-t", target}, sshArgs...)
+			splitCmd = exec.Command("tmux", cmdArgs...)
 		}
 
 		if err := splitCmd.Run(); err != nil {

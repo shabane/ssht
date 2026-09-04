@@ -3,20 +3,39 @@ package sshUtils
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/kevinburke/ssh_config"
 )
 
-func GetAllHosts() ([]string, error) {
+func GetAllHosts(customPath string) ([]string, error) {
 	var allHosts []string
-	home, err := os.UserHomeDir() //TODO: get form --flag
-	if err != nil {
-		return nil, fmt.Errorf("could not determine user home directory: %w", err)
+	configPath := customPath
+	if configPath == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("could not determine user home directory: %w", err)
+		}
+		configPath = filepath.Join(home, ".ssh", "config")
+	} else {
+		if strings.HasPrefix(configPath, "~/") {
+			home, err := os.UserHomeDir()
+			if err == nil {
+				configPath = filepath.Join(home, configPath[2:])
+			}
+		}
+		absPath, err := filepath.Abs(configPath)
+		if err == nil {
+			configPath = absPath
+		}
+		CustomConfigPath = configPath
+		ssh_config.DefaultUserSettings.ConfigFinder(func() string {
+			return configPath
+		})
 	}
 
-	configPath := fmt.Sprintf("%s/.ssh/config", home)
-	fli, err := os.Open(configPath) //TODO: use --list
+	fli, err := os.Open(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("SSH config file not found at %s\nPlease ensure your SSH config exists or create one", configPath)

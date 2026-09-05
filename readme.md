@@ -1,5 +1,9 @@
 # ssht
 
+[![CI](https://github.com/shabane/ssht/actions/workflows/ci.yml/badge.svg)](https://github.com/shabane/ssht/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/shabane/ssht?color=%2342f5aa)](https://github.com/shabane/ssht/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ![ssht demo](assets/demo.gif)
 
 **ssht** or **ssh-tmux**.
@@ -48,11 +52,14 @@ curl -sSL https://raw.githubusercontent.com/shabane/ssht/master/install.sh | bas
 ```
 This script will automatically detect your OS/architecture, download the correct latest release from GitHub, and install it to `~/.local/bin/ssht`.
 
-### shortcuts
+### Shortcuts
 |  Key   |                       Task                       |
 |:------:|:------------------------------------------------:|
+| Enter  | Open Selected Host in Tmux                       |
 | Space  | Toggle selection of host ([x])                   |
 |  Tab   | Switch focus between Search and List             |
+| ↑ / ↓  | Navigate host list                               |
+| PgUp/Dn| Page up/down in host list                        |
 | CTRL+S | Sort hosts (Selected & Reachable first)          |
 | CTRL+W | Connect Directly to Selected Host (No Tmux)      |
 | CTRL+A | Open Filtered/Selected Hosts in Tailed Tmux      |

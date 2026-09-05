@@ -172,12 +172,12 @@ func formatHostLocked(host, color string) string {
 	}
 
 	if isProxy {
-		target = fmt.Sprintf("[yellow][proxy][-] %s", target)
+		target = fmt.Sprintf("[yellow]%s[-] %s", tview.Escape("[proxy]"), target)
 	}
 
 	prefix := "[ ] "
 	if selectedHostsMap[host] {
-		prefix = "[#42f5aa][x][-] "
+		prefix = fmt.Sprintf("[#42f5aa]%s[-] ", tview.Escape("[x]"))
 	}
 
 	alias := fmt.Sprintf("%-*s", sshUtils.MaxHostLen, host)

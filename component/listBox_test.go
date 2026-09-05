@@ -7,6 +7,7 @@ import (
 	"ssht/sshUtils"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 func TestFormatHost_BasicAndColor(t *testing.T) {
@@ -23,6 +24,18 @@ func TestFormatHost_BasicAndColor(t *testing.T) {
 	formattedColor := FormatHost(host, "green")
 	if !strings.Contains(formattedColor, "[green]myhost") {
 		t.Errorf("expected green tag on host, got: %q", formattedColor)
+	}
+
+	// Selected
+	selectedHostsMap[host] = true
+	defer delete(selectedHostsMap, host)
+	formattedSelected := FormatHost(host, "")
+	if tview.TaggedStringWidth(formattedSelected) != tview.TaggedStringWidth(formatted) {
+		t.Errorf("selected width (%d) should match unselected width (%d)",
+			tview.TaggedStringWidth(formattedSelected), tview.TaggedStringWidth(formatted))
+	}
+	if !strings.Contains(formattedSelected, tview.Escape("[x]")) {
+		t.Errorf("expected escaped [x] in selected item, got: %q", formattedSelected)
 	}
 }
 
@@ -144,4 +157,37 @@ func TestListBoxSpaceInputCapture(t *testing.T) {
 		t.Fatalf("expected 0 selected hosts after second toggle, got %d", GetSelectedCount())
 	}
 }
+
+func TestPrefixEscaping(t *testing.T) {
+	rawX := "[#42f5aa][x][-] "
+	escapedX := "[#42f5aa]" + tview.Escape("[x]") + "[-] "
+	rawSpace := "[ ] "
+	escapedSpace := tview.Escape("[ ]") + " "
+
+	if tview.TaggedStringWidth(rawX) != 1 {
+		t.Errorf("expected rawX width to be 1 (swallowed tag), got %d", tview.TaggedStringWidth(rawX))
+	}
+	if tview.TaggedStringWidth(escapedX) != 4 {
+		t.Errorf("expected escapedX width to be 4, got %d", tview.TaggedStringWidth(escapedX))
+	}
+	if tview.TaggedStringWidth(rawSpace) != 4 {
+		t.Errorf("expected rawSpace width to be 4, got %d", tview.TaggedStringWidth(rawSpace))
+	}
+	if tview.TaggedStringWidth(escapedSpace) != 4 {
+		t.Errorf("expected escapedSpace width to be 4, got %d", tview.TaggedStringWidth(escapedSpace))
+	}
+
+	proxyRaw := "[yellow][proxy][-] "
+	proxyEscaped := "[yellow]" + tview.Escape("[proxy]") + "[-] "
+	if tview.TaggedStringWidth(proxyRaw) != 1 {
+		t.Errorf("expected proxyRaw width to be 1 (swallowed tag), got %d", tview.TaggedStringWidth(proxyRaw))
+	}
+	if tview.TaggedStringWidth(proxyEscaped) != 8 {
+		t.Errorf("expected proxyEscaped width to be 8, got %d", tview.TaggedStringWidth(proxyEscaped))
+	}
+}
+
+
+
+
 

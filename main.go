@@ -15,6 +15,7 @@ import (
 	"ssht/tviewUtils"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 var (
@@ -160,7 +161,7 @@ func main() {
 			component.Clear()
 			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
 			component.ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
-			component.ListBox.AddItem("Space", "Toggle Selection ([x]) on List", 0, nil)
+			component.ListBox.AddItem("Space", fmt.Sprintf("Toggle Selection (%s) on List", tview.Escape("[x]")), 0, nil)
 			component.ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
 			component.ListBox.AddItem("Esc", "Back", 0, nil)
 			component.ListBox.AddItem("Enter", "Open Selected Host", 0, nil)

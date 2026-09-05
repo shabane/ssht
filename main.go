@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -115,39 +116,46 @@ func main() {
 			return hosts
 		}
 
-		if keyName == "Ctrl+A" {
+		isCtrl := func(key tcell.Key, name string) bool {
+			return event.Key() == key || keyName == name || keyName == strings.Replace(name, "+", "-", 1)
+		}
+
+		isListBoxFocused := component.ListBox.HasFocus() || tviewUtils.App.GetFocus() == component.ListBox
+		isSpace := (event.Key() == tcell.KeyRune && event.Rune() == ' ') || keyName == "Space" || keyName == "Rune[ ]"
+
+		if isCtrl(tcell.KeyCtrlA, "Ctrl+A") {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.TailedPane, getActiveHosts())
-		} else if keyName == "Ctrl+O" {
+		} else if isCtrl(tcell.KeyCtrlO, "Ctrl+O") {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, getActiveHosts())
-		} else if keyName == "Ctrl+N" {
+		} else if isCtrl(tcell.KeyCtrlN, "Ctrl+N") {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.Window, getActiveHosts())
-		} else if keyName == "Ctrl+S" {
+		} else if isCtrl(tcell.KeyCtrlS, "Ctrl+S") {
 			component.SortVisibleHosts()
 			return nil
-		} else if keyName == "Ctrl+W" {
+		} else if isCtrl(tcell.KeyCtrlW, "Ctrl+W") {
 			if !stopPing.Load() {
 				index := component.ListBox.GetCurrentItem()
 				if host, ok := component.GetHost(index); ok {
 					tmuxUtils.DirectConnect(host)
 				}
 			}
-		} else if keyName == "Space" && tviewUtils.App.GetFocus() == component.ListBox {
+		} else if isSpace && isListBoxFocused {
 			index := component.ListBox.GetCurrentItem()
 			component.ToggleSelect(index)
 			return nil
-		} else if keyName == "Tab" {
-			if tviewUtils.App.GetFocus() == component.SearchBox {
-				tviewUtils.App.SetFocus(component.ListBox)
-			} else {
+		} else if event.Key() == tcell.KeyTab || keyName == "Tab" {
+			if isListBoxFocused {
 				tviewUtils.App.SetFocus(component.SearchBox)
+			} else {
+				tviewUtils.App.SetFocus(component.ListBox)
 			}
 			return nil
-		} else if keyName == "Esc" {
+		} else if event.Key() == tcell.KeyEscape || keyName == "Esc" || keyName == "Escape" {
 			stopPing.Store(false)
 			// Clearing the search text triggers the search handler, which
 			// repopulates the list with every host and requests a fresh ping.
 			component.SearchBox.SetText("")
-		} else if keyName == "Ctrl+G" {
+		} else if isCtrl(tcell.KeyCtrlG, "Ctrl+G") {
 			stopPing.Store(true)
 			component.Clear()
 			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
@@ -161,12 +169,15 @@ func main() {
 			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
 			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)
 			component.ListBox.AddItem("CTRL+C", "Quit", 0, nil)
-		} else if keyName == "Down" || keyName == "Up" {
+		} else if event.Key() == tcell.KeyDown || event.Key() == tcell.KeyUp || event.Key() == tcell.KeyPgUp || event.Key() == tcell.KeyPgDn ||
+			keyName == "Down" || keyName == "Up" || keyName == "PgUp" || keyName == "PgDn" || keyName == "Home" || keyName == "End" {
 			tviewUtils.App.SetFocus(component.ListBox)
-		} else if keyName != "Enter" {
-			component.SearchBox.SetText(component.SearchBox.GetText())
-			tviewUtils.App.SetFocus(component.SearchBox)
-		} else if keyName == "Enter" {
+		} else if keyName != "Enter" && event.Key() != tcell.KeyEnter {
+			if !component.SearchBox.HasFocus() {
+				component.SearchBox.SetText(component.SearchBox.GetText())
+				tviewUtils.App.SetFocus(component.SearchBox)
+			}
+		} else if keyName == "Enter" || event.Key() == tcell.KeyEnter {
 			tviewUtils.App.SetFocus(component.ListBox)
 		}
 

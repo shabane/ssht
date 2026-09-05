@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"ssht/sshUtils"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 func TestFormatHost_BasicAndColor(t *testing.T) {
@@ -107,3 +109,39 @@ func TestSortVisibleHosts(t *testing.T) {
 		t.Errorf("expected visible[2] to be unreachable-host, got %s", visible[2])
 	}
 }
+
+func TestListBoxSpaceInputCapture(t *testing.T) {
+	Clear()
+	ClearSelection()
+	AddItem("srv-1", "", 0, nil)
+	AddItem("srv-2", "", 0, nil)
+	ListBox.SetCurrentItem(1)
+
+	capture := ListBox.GetInputCapture()
+	if capture == nil {
+		t.Fatal("expected input capture on ListBox")
+	}
+
+	ev := tcell.NewEventKey(tcell.KeyRune, ' ', 0)
+	ret := capture(ev)
+	if ret != nil {
+		t.Errorf("expected event to be consumed (return nil), got %v", ret)
+	}
+	if GetSelectedCount() != 1 {
+		t.Fatalf("expected 1 selected host, got %d", GetSelectedCount())
+	}
+	selected := GetSelectedHosts()
+	if len(selected) != 1 || selected[0] != "srv-2" {
+		t.Fatalf("expected srv-2 selected, got %v", selected)
+	}
+
+	// Toggle again to unselect
+	ret = capture(ev)
+	if ret != nil {
+		t.Errorf("expected event to be consumed (return nil), got %v", ret)
+	}
+	if GetSelectedCount() != 0 {
+		t.Fatalf("expected 0 selected hosts after second toggle, got %d", GetSelectedCount())
+	}
+}
+

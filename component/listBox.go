@@ -51,6 +51,14 @@ func newListBox() *tview.List {
 		listBox := tview.NewList()
 		listBox.SetBorder(true)
 		listBox.SetBorderColor(tcell.GetColor("#42d1f5"))
+		listBox.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			if (event.Key() == tcell.KeyRune && event.Rune() == ' ') || event.Name() == "Space" || event.Name() == "Rune[ ]" {
+				index := listBox.GetCurrentItem()
+				ToggleSelect(index)
+				return nil
+			}
+			return event
+		})
 		ListBox = listBox
 	}
 	return ListBox
@@ -87,7 +95,7 @@ func ToggleSelect(index int) {
 	ListBox.SetItemText(index, formatHostLocked(host, color), "")
 	count := len(selectedHostsMap)
 	if OnSelectionChanged != nil {
-		go OnSelectionChanged(count)
+		OnSelectionChanged(count)
 	}
 }
 

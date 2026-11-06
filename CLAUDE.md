@@ -32,7 +32,7 @@ The app is a single global UI tree mutated by event handlers — there is no cen
 
 1. `main.go` parses hosts, builds the layout, seeds the list with all hosts, starts the ping goroutine, and installs a single global `SetInputCapture` keybinding handler.
 2. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which clears and refills the list via substring match (`sshUtils.SearchHostname`).
-3. Keybindings in `main.go` map to tmux actions: `Ctrl+W` direct ssh (no tmux), `Ctrl+A`/`Ctrl+O`/`Ctrl+N` open selected (or filtered) hosts in tmux as tailed panes / synced panes / separate windows, `Space` toggles multi-selection, `Tab` toggles focus, `Ctrl+S` sorts by reachability, `Ctrl+G` shows an in-list help menu, `Esc` resets the search and list.
+3. Keybindings in `main.go` map to tmux actions: `Ctrl+W` direct ssh (no tmux), `Ctrl+T` remote tmux on server, `Ctrl+A`/`Ctrl+O`/`Ctrl+N` open selected (or filtered) hosts in tmux as tailed panes / synced panes / separate windows, `Space` toggles multi-selection, `Tab` toggles focus, `Ctrl+S` sorts by reachability, `Ctrl+G` shows an in-list help menu, `Esc` resets the search and list.
 
 ### tmux integration (`tmuxUtils/connectAll.go`)
 

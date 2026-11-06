@@ -33,9 +33,13 @@ func buildSSHArgs(hostname string) []string {
 	return args
 }
 
+func generateTmuxSessionId() string {
+	return "ssht-" + strconv.Itoa(int(time.Now().Unix()))
+}
+
 func SessionCreator(hostname string) {
 	if tmuxId == "" {
-		tmuxId = "ssht-" + strconv.Itoa(int(time.Now().Unix()))
+		tmuxId = generateTmuxSessionId()
 		if err := os.Setenv("TMUX_ID", tmuxId); err != nil {
 			log.Fatal(err)
 		}
@@ -63,9 +67,40 @@ func runSSH(hostname string) {
 	}
 }
 
+func buildRemoteTmuxArgs(hostname string, sessionName string) []string {
+	var args []string
+	args = append(args, "-t")
+	if sshUtils.CustomConfigPath != "" {
+		args = append(args, "-F", sshUtils.CustomConfigPath)
+	}
+	remoteCmd := fmt.Sprintf("tmux new-session -s %s || tmux", sessionName)
+	args = append(args, hostname, remoteCmd)
+	return args
+}
+
+func runRemoteTmux(hostname string) {
+	sessionName := generateTmuxSessionId()
+	cmd := exec.Command("ssh", buildRemoteTmuxArgs(hostname, sessionName)...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error running remote tmux via ssh: %v\n", err)
+		fmt.Println("Press Enter to return...")
+		var discard string
+		fmt.Scanln(&discard)
+	}
+}
+
 func DirectConnect(hostname string) {
 	tviewUtils.App.Suspend(func() {
 		runSSH(hostname)
+	})
+}
+
+func RemoteTmuxConnect(hostname string) {
+	tviewUtils.App.Suspend(func() {
+		runRemoteTmux(hostname)
 	})
 }
 

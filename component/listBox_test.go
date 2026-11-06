@@ -186,8 +186,3 @@ func TestPrefixEscaping(t *testing.T) {
 		t.Errorf("expected proxyEscaped width to be 8, got %d", tview.TaggedStringWidth(proxyEscaped))
 	}
 }
-
-
-
-
-

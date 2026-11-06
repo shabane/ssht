@@ -140,6 +140,13 @@ func main() {
 					tmuxUtils.DirectConnect(host)
 				}
 			}
+		} else if isCtrl(tcell.KeyCtrlT, "Ctrl+T") {
+			if !stopPing.Load() {
+				index := component.ListBox.GetCurrentItem()
+				if host, ok := component.GetHost(index); ok {
+					tmuxUtils.RemoteTmuxConnect(host)
+				}
+			}
 		} else if isSpace && isListBoxFocused {
 			index := component.ListBox.GetCurrentItem()
 			component.ToggleSelect(index)
@@ -166,6 +173,7 @@ func main() {
 			component.ListBox.AddItem("Esc", "Back", 0, nil)
 			component.ListBox.AddItem("Enter", "Open Selected Host", 0, nil)
 			component.ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
+			component.ListBox.AddItem("CTRL+T", "Connect to Selected Host with Remote Tmux", 0, nil)
 			component.ListBox.AddItem("CTRL+A", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
 			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
 			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)

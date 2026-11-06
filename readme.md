@@ -27,6 +27,7 @@ in a tmux session (or connect directly without tmux).
 - **Smart Sorting:** sort with `CTRL+S` (selected & reachable hosts float to top, unreachable to bottom)
 - **Batch Tmux Sessions:** open in tiled panes (`CTRL+A`), synchronized panes (`CTRL+O`), or separate windows (`CTRL+N`)
 - **Direct Connect:** connect to a single host directly without tmux (`Enter` or `CTRL+W`)
+- **Remote Tmux Connect:** connect to a single host running tmux directly on the server (`CTRL+T`)
 - **Informative List:** displays each host's configured user and IP (`[user@]HostName`) next to its alias
 - **ProxyJump / Bastion Support:** detects proxy/bastion configs, labels them `[proxy]`, and avoids false unreachable alerts
 - **Full `Include` Support:** recursively parses `Include` directives with wildcards and relative paths
@@ -62,6 +63,7 @@ This script will automatically detect your OS/architecture, download the correct
 | PgUp/Dn| Page up/down in host list                        |
 | CTRL+S | Sort hosts (Selected & Reachable first)          |
 | CTRL+W | Connect Directly to Selected Host (No Tmux)      |
+| CTRL+T | Connect to Selected Host with Remote Tmux        |
 | CTRL+A | Open Filtered/Selected Hosts in Tailed Tmux      |
 | CTRL+O | Open Filtered/Selected Hosts With Synced Panes   |
 | CTRL+N | Open Filtered/Selected Hosts In New Windows      |
@@ -71,7 +73,7 @@ This script will automatically detect your OS/architecture, download the correct
 
 ### Demos
 
-#### 1. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct)
+#### 1. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct / `CTRL+T` for Remote Tmux)
 ![Connect One](assets/connect_one.gif)
 
 #### 2. Connect to All (Tailed Mode - `CTRL+A`)

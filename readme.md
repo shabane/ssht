@@ -22,12 +22,16 @@ optionally multi-select specific servers with `Space`, and connect to one or bat
 in a tmux session (or connect directly without tmux).
 
 ### Features
-- **Fast Search:** case-insensitive substring match across host aliases, configured IPs, users, and ProxyJump bastions
+- **K9s-Style Navigation:** single-key actions when focused on list (`d` describe, `e` edit in editor, `s` shell, `w` direct, `c` remote command, `/` search, `:` command mode)
+- **Host Inspection Modal (`d`):** inspect all `ssh_config` directives (IdentityFile validation, ProxyJump, LocalForward, RemoteCommand, Tags, and file location)
+- **In-Place Config Editing (`e`):** jump straight to the host's definition line in `$EDITOR` (vim, nano, code) and auto-reload changes upon exit
+- **Advanced Query & Tag Filtering:** filter by tags (`#tag`, `tag:name`, `:tag name`), colon directives (`:proxy`, `:fwd`, `:badkeys`, `:cmd`, `:all`), or inverted matches (`!term`)
+- **Fast Search:** case-insensitive substring match across host aliases, configured IPs, users, tags, and ProxyJump bastions
 - **Multi-Selection:** toggle selection on hosts with `Space` to open only chosen servers
 - **Smart Sorting:** sort with `CTRL+S` (selected & reachable hosts float to top, unreachable to bottom)
-- **Batch Tmux Sessions:** open in tiled panes (`CTRL+A`), synchronized panes (`CTRL+O`), or separate windows (`CTRL+N`)
-- **Direct Connect:** connect to a single host directly without tmux (`Enter` or `CTRL+W`)
-- **Remote Tmux Connect:** connect to a single host running tmux directly on the server (`CTRL+T`)
+- **Batch Tmux Sessions:** open in tiled panes (`CTRL+A` or `a`), synchronized panes (`CTRL+O` or `o`), or separate windows (`CTRL+N`)
+- **Direct Connect:** connect to a single host directly without tmux (`Enter`, `s`, or `CTRL+W` / `w`)
+- **Remote Tmux Connect:** connect to a single host running tmux directly on the server (`CTRL+T` or `t`)
 - **Informative List:** displays each host's configured user and IP (`[user@]HostName`) next to its alias
 - **ProxyJump / Bastion Support:** detects proxy/bastion configs, labels them `[proxy]`, and avoids false unreachable alerts
 - **Full `Include` Support:** recursively parses `Include` directives with wildcards and relative paths
@@ -54,22 +58,31 @@ curl -sSL https://raw.githubusercontent.com/shabane/ssht/master/install.sh | bas
 This script will automatically detect your OS/architecture, download the correct latest release from GitHub, and install it to `~/.local/bin/ssht`.
 
 ### Shortcuts
-|  Key   |                       Task                       |
-|:------:|:------------------------------------------------:|
-| Enter  | Open Selected Host in Tmux                       |
-| Space  | Toggle selection of host ([x])                   |
-|  Tab   | Switch focus between Search and List             |
-| ↑ / ↓  | Navigate host list                               |
-| PgUp/Dn| Page up/down in host list                        |
-| CTRL+S | Sort hosts (Selected & Reachable first)          |
-| CTRL+W | Connect Directly to Selected Host (No Tmux)      |
-| CTRL+T | Connect to Selected Host with Remote Tmux        |
-| CTRL+A | Open Filtered/Selected Hosts in Tailed Tmux      |
-| CTRL+O | Open Filtered/Selected Hosts With Synced Panes   |
-| CTRL+N | Open Filtered/Selected Hosts In New Windows      |
-| CTRL+G | Open Guide Menu                                  |
-|  Esc   | Reset search / back                              |
-| CTRL+C | Quit                                             |
+|     Key      |                       Task                       |
+|:------------:|:------------------------------------------------:|
+| Enter / `s`  | Open Selected Host in Tmux                       |
+|    `d`       | Describe / Inspect host SSH config directives    |
+|    `e`       | Edit host definition line directly in `$EDITOR`  |
+|    `w`       | Direct Connect (No Tmux)                         |
+|    `t`       | Connect with Remote Tmux                         |
+|    `c`       | Run configured `RemoteCommand` (if defined)      |
+|    `a`       | Open Filtered/Selected Hosts in Tailed Tmux      |
+|    `o`       | Open Filtered/Selected Hosts With Synced Panes   |
+|    `:`       | Command prompt mode (`:tag`, `:proxy`, `:fwd`...) |
+|    `/`       | Quick search / filter mode (`#tag`, `tag:...`)   |
+|    Space     | Toggle selection of host ([x])                   |
+|     Tab      | Switch focus between Search and List             |
+|    ↑ / ↓     | Navigate host list (or `j` / `k` when focused)   |
+|   PgUp/Dn    | Page up/down in host list                        |
+|    CTRL+S    | Sort hosts (Selected & Reachable first)          |
+|    CTRL+W    | Connect Directly to Selected Host (No Tmux)      |
+|    CTRL+T    | Connect to Selected Host with Remote Tmux        |
+|    CTRL+A    | Open Filtered/Selected Hosts in Tailed Tmux      |
+|    CTRL+O    | Open Filtered/Selected Hosts With Synced Panes   |
+|    CTRL+N    | Open Filtered/Selected Hosts In New Windows      |
+|    CTRL+G    | Open Guide Menu                                  |
+|     Esc      | Reset search / close modal / back                |
+|    CTRL+C    | Quit                                             |
 
 ### Demos
 

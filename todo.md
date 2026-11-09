@@ -76,3 +76,31 @@
 - [x] **بهبود اسناد و متن README**
   - [x] اصلاح تایپوها (`symontiniusly` -> `simultaneously`, `guaranty` -> `guarantee`, `syncronize` -> `synchronize`)
   - [x] افزودن راهنمای ساخت از سورس و امکانات جدید به README
+
+---
+
+## 🟠 فاز ۵: معماری مدرن و ناوبری الهام‌گرفته از k9s (Modern UX & SSH Directives)
+
+- [x] **استخراج پیشرفته متادیتای SSH و ردیابی شماره خطوط (ADR 0001)**
+  - *توضیح:* اضافه شدن استراکت `HostMetadata` جهت استخراج دایرکتیوهای `Tag`، `IdentityFile` (همراه با اعتبارسنجی زنده وجود فایل و پرمیشن ۰۶۰۰)، `RemoteCommand`، `LocalForward`، `DynamicForward`، `ProxyJump` و ردیابی فایل منبع و شماره خط هر هاست.
+  - *محل اعمال:* `sshUtils/variables.go` و `sshUtils/sshUtils.go`
+
+- [x] **موتور جستجو و فیلتر پیشرفته تگ‌ها و دایرکتیوها (ADR 0002)**
+  - *توضیح:* پشتیبانی از پیشوند تگ‌ها (`#tag` یا `tag:<name>`)، دستورات کولون (`:proxy`, `:fwd`, `:tunnel`, `:badkeys`, `:keys`, `:cmd`, `:tag <name>`, `:all`) و فیلترهای معکوس (`!<term>`).
+  - *محل اعمال:* `sshUtils/sshUtils.go` و `sshUtils/sshUtils_test.go`
+
+- [x] **پاپ‌آپ بازرسی مشخصات کامل هاست با کلید `d` (Describe Modal - ADR 0003)**
+  - *توضیح:* نمایش پاپ‌آپ معلق جهت مشاهده تمامی دایرکتیوهای `ssh_config` مربوط به یک سرور بدون شلوغ کردن لیست، به همراه شورتکات‌های اتصال (`Enter`/`s`)، ادیت (`e`) و اجرای دستور (`c`).
+  - *محل اعمال:* `component/describeModal.go` و `component/describeModal_test.go`
+
+- [x] **ویرایشگر درجا با پرش به خط هاست با کلید `e` (In-Place Editor - ADR 0004)**
+  - *توضیح:* باز کردن مستقیم فایل کانفیگ SSH در `$EDITOR` کاربر (`vim`, `nano`, `code`) دقیقاً روی شماره خط همان هاست و رفرش خودکار لیست و متادیتاها پس از خروج از ادیتور.
+  - *محل اعمال:* `sshUtils/editor.go` و `sshUtils/editor_test.go`
+
+- [x] **چیدمان `tview.Pages`، ناوبری تک‌کلیدی و پرامپت خط فرمان (ADR 0005)**
+  - *توضیح:* تغییر ریشه برنامه به `tview.Pages`، فعال‌سازی کلیدهای تک‌حرفی حسی در زمان فوکوس روی لیست (`d`, `e`, `s`, `w`, `t`, `c`, `a`, `o`, `/`, `:`), پرامپت خط فرمان با کلید `:`, به‌روزرسانی نوار فوتر و حفظ کامل سازگاری به عقب با تمامی شورتکات‌های قبلی.
+  - *محل اعمال:* `tviewUtils/app.go`, `component/footer.go`, `component/listBox.go`, `main.go`
+
+- [x] **رفع مشکل جایگزینی باینری در اسکریپت نصب (Installer Bugfix)**
+  - *توضیح:* استفاده از فایل موقت اتمیک (`mktemp`) و دستور `mv -f` در `install.sh` برای جایگزینی موفق و بدون خطای `Text file busy` هنگام نصب مجدد یا باز بودن برنامه.
+  - *محل اعمال:* `install.sh`

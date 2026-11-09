@@ -24,15 +24,22 @@ Running the app requires an interactive TTY and a populated `~/.ssh/config`; it 
 
 The app is a single global UI tree mutated by event handlers — there is no central state struct. Packages communicate through exported package-level variables, not dependency injection. Key globals:
 
-- `tviewUtils.App` / `tviewUtils.MainBox` — the singleton tview application and root flex layout (SearchBox on top, ListBox below, Footer at bottom).
-- `sshUtils.AllHosts` — every host parsed from `~/.ssh/config` (the `*` wildcard entry is skipped). Populated once at startup by `GetAllHosts()`.
+- `tviewUtils.App` / `tviewUtils.Pages` / `tviewUtils.MainBox` — the singleton tview application, root pages manager ("main" and "modal" overlays), and root flex layout (SearchBox on top, ListBox below, Footer at bottom).
+- `sshUtils.AllHosts` & `sshUtils.HostsMeta` — all hosts parsed from `~/.ssh/config` (wildcards skipped) and rich metadata per host (`Tag`, `IdentityFile`, `RemoteCommand`, `LocalForward`, `ProxyJump`, `SourceFile`, `SourceLine`). Populated at startup by `GetAllHosts()`.
 - `component.ListBox` + `component.visibleHosts` — the rendered list and a parallel slice tracking what is currently shown.
 
 ### Control flow
 
-1. `main.go` parses hosts, builds the layout, seeds the list with all hosts, starts the ping goroutine, and installs a single global `SetInputCapture` keybinding handler.
-2. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which clears and refills the list via substring match (`sshUtils.SearchHostname`).
-3. Keybindings in `main.go` map to tmux actions: `Ctrl+W` direct ssh (no tmux), `Ctrl+T` remote tmux on server, `Ctrl+A`/`Ctrl+O`/`Ctrl+N` open selected (or filtered) hosts in tmux as tailed panes / synced panes / separate windows, `Space` toggles multi-selection, `Tab` toggles focus, `Ctrl+S` sorts by reachability, `Ctrl+G` shows an in-list help menu, `Esc` resets the search and list.
+1. `main.go` parses hosts and metadata, builds the layout with SearchBox collapsed/hidden by default, seeds the list with all hosts, starts the ping goroutine, and installs a single global `SetInputCapture` keybinding handler on `App`.
+2. ListBox is primary focus on startup. Single-key actions when ListBox is focused:
+   - `d` opens the Describe modal overlay (`component.NewDescribeModal`) inspecting all host directives and verifying identity file existence.
+   - `e` launches `$EDITOR` directly at the host's source line (`sshUtils.LaunchEditorByHost`), suspending the TUI and reloading configs upon exit.
+   - `s` or `Enter` opens in tmux; `w` connects directly (no tmux); `t` connects via remote tmux; `c` runs `RemoteCommand` (if defined).
+   - `a` connects all active/selected hosts in tiled tmux; `o` connects in synced panes.
+   - `/` activates filter mode, showing and focusing SearchBox; `:` activates command mode with initial `:`.
+   - `Esc` clears filter, repopulates list, and collapses SearchBox back to hidden state.
+3. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which refills the list via `sshUtils.SearchHostname`. Supports `#tag`, `tag:<name>`, colon directives (`:proxy`, `:fwd`, `:cmd`, `:badkeys`, `:keys`, `:tag <name>`, `:all`), and inverted matches (`!<term>`).
+4. Keybindings in `main.go` also maintain complete backward compatibility for `Ctrl+A`, `Ctrl+O`, `Ctrl+N`, `Ctrl+W`, `Ctrl+T`, `Ctrl+S`, `Ctrl+G`, `Tab`, `Space`, and `Enter`.
 
 ### tmux integration (`tmuxUtils/connectAll.go`)
 

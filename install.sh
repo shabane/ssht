@@ -48,18 +48,22 @@ fi
 
 INSTALL_PATH="$INSTALL_DIR/ssht"
 
+TMP_FILE="$(mktemp "${TMPDIR:-/tmp}/ssht.XXXXXX")"
+trap 'rm -f "$TMP_FILE"' EXIT
+
 echo "Downloading $ASSET from $DOWNLOAD_URL..."
 # Download with curl or wget
 if command -v curl >/dev/null 2>&1; then
-    curl -L -o "$INSTALL_PATH" "$DOWNLOAD_URL"
+    curl -fsSL -o "$TMP_FILE" "$DOWNLOAD_URL"
 elif command -v wget >/dev/null 2>&1; then
-    wget -O "$INSTALL_PATH" "$DOWNLOAD_URL"
+    wget -O "$TMP_FILE" "$DOWNLOAD_URL"
 else
     echo "Error: curl or wget is required to download the binary."
     exit 1
 fi
 
-chmod +x "$INSTALL_PATH"
+chmod +x "$TMP_FILE"
+mv -f "$TMP_FILE" "$INSTALL_PATH"
 echo "Successfully installed ssht to $INSTALL_PATH"
 
 # Check if INSTALL_DIR is in PATH

@@ -124,19 +124,19 @@
 - Create: `component/describeModal.go`
 - Test: `component/describeModal_test.go`
 
-- [ ] **Step 3.1: Write unit test for DescribeModal formatting**
+- [x] **Step 3.1: Write unit test for DescribeModal formatting**
   Create `component/describeModal_test.go` to test that `BuildDescribeContent(meta sshUtils.HostMetadata)` generates formatted text containing all host fields, key status indicator, and shortcut hints.
 
-- [ ] **Step 3.2: Implement `describeModal.go`**
+- [x] **Step 3.2: Implement `describeModal.go`**
   Build `NewDescribeModal(host string, onConnect, onEdit, onRunCmd, onClose func()) tview.Primitive`:
   - Uses `tview.NewTextView().SetDynamicColors(true)` inside a styled centered `tview.Flex`.
   - Renders alias, IP, port, user, tags, identity file existence, proxy jump, port forwards, remote command, and source line.
   - Handles keyboard shortcuts within modal: `Esc` / `q` to close, `Enter` / `s` to connect, `e` to edit, `c` to run remote command.
 
-- [ ] **Step 3.3: Run tests and verify**
+- [x] **Step 3.3: Run tests and verify**
   Run `go test -v ./component` and ensure tests pass.
 
-- [ ] **Step 3.4: Commit Task 3**
+- [x] **Step 3.4: Commit Task 3**
   `git commit -am "feat(ui): add interactive host describe modal component"`
 
 ---

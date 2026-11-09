@@ -249,3 +249,22 @@ func SortVisibleHosts() {
 		ListBox.AddItem(formatHostLocked(host, color), "", 0, fn)
 	}
 }
+
+// RefreshList reloads and repopulates visible hosts from sshUtils.AllHosts,
+// respecting any active query in SearchBox, and requests a reachability ping.
+func RefreshList() {
+	text := ""
+	if SearchBox != nil {
+		text = SearchBox.GetText()
+	}
+	Clear()
+	for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
+		h := host
+		var fn func()
+		if DefaultSelectFunc != nil {
+			fn = DefaultSelectFunc(h)
+		}
+		AddItem(h, "", 0, fn)
+	}
+	RequestPing()
+}

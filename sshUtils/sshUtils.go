@@ -311,6 +311,11 @@ func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]strin
 	return hosts, nil
 }
 
+// GetHostMeta returns metadata for the given host alias.
+func GetHostMeta(host string) HostMetadata {
+	return getHostMeta(host)
+}
+
 func getHostMeta(host string) HostMetadata {
 	if HostsMeta == nil {
 		HostsMeta = make(map[string]HostMetadata)

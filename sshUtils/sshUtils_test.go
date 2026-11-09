@@ -711,3 +711,20 @@ func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
 		t.Errorf("expected 0 results, got %v", results)
 	}
 }
+
+func TestGetHostMeta(t *testing.T) {
+	oldMeta := HostsMeta
+	defer func() { HostsMeta = oldMeta }()
+	HostsMeta = make(map[string]HostMetadata)
+
+	HostsMeta["my-server"] = HostMetadata{
+		Alias:    "my-server",
+		HostName: "10.0.0.1",
+		User:     "admin",
+	}
+
+	meta := GetHostMeta("my-server")
+	if meta.Alias != "my-server" || meta.HostName != "10.0.0.1" || meta.User != "admin" {
+		t.Fatalf("unexpected metadata: %+v", meta)
+	}
+}

@@ -186,3 +186,37 @@ func TestPrefixEscaping(t *testing.T) {
 		t.Errorf("expected proxyEscaped width to be 8, got %d", tview.TaggedStringWidth(proxyEscaped))
 	}
 }
+
+func TestRefreshList(t *testing.T) {
+	origAllHosts := sshUtils.AllHosts
+	defer func() {
+		sshUtils.AllHosts = origAllHosts
+		Clear()
+		if SearchBox != nil {
+			SearchBox.SetText("")
+		}
+	}()
+
+	sshUtils.AllHosts = []string{"alpha-server", "beta-server", "gamma-server"}
+	if SearchBox != nil {
+		SearchBox.SetText("")
+	}
+	RefreshList()
+
+	visible := GetVisibleHosts()
+	if len(visible) != 3 {
+		t.Fatalf("expected 3 visible hosts after RefreshList, got %d", len(visible))
+	}
+	if visible[0] != "alpha-server" || visible[1] != "beta-server" || visible[2] != "gamma-server" {
+		t.Fatalf("unexpected visible hosts: %v", visible)
+	}
+
+	// Filter query via SearchBox
+	SearchBox.SetText("alpha")
+	RefreshList()
+
+	visible = GetVisibleHosts()
+	if len(visible) != 1 || visible[0] != "alpha-server" {
+		t.Fatalf("expected [alpha-server], got %v", visible)
+	}
+}

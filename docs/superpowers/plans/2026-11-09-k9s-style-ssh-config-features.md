@@ -186,11 +186,11 @@
 - Modify: `component/footer.go`
 - Modify: `main.go`
 
-- [ ] **Step 5.1: Update `tviewUtils/app.go` with `Pages`**
+- [x] **Step 5.1: Update `tviewUtils/app.go` with `Pages`**
   Wrap `MainBox` inside `var Pages = tview.NewPages()`.
   Add page `"main"` with `MainBox`.
 
-- [ ] **Step 5.2: Wire Single-Key Hotkeys in ListBox navigation**
+- [x] **Step 5.2: Wire Single-Key Hotkeys in ListBox navigation**
   In `main.go` / `listBox.go`, when `ListBox` has focus:
   - `d`: Show `"modal"` page with `NewDescribeModal`.
   - `e`: Trigger `LaunchEditor(currentHost)`. Refresh list after resume.
@@ -203,14 +203,14 @@
   - `/`: Move focus to `SearchBox`.
   - `:`: Populate `SearchBox` with `:` and move focus to it.
 
-- [ ] **Step 5.3: Update Footer and Guide Modal**
+- [x] **Step 5.3: Update Footer and Guide Modal**
   Update `component/footer.go` to display k9s-style hints:
   `<s> Shell | <d> Describe | <e> Edit | <w> Direct | <a> Tiled | <o> Sync | </> Search | <:> Cmd`
 
-- [ ] **Step 5.4: Test backwards compatibility**
+- [x] **Step 5.4: Test backwards compatibility**
   Verify that `Ctrl+A`, `Ctrl+O`, `Ctrl+W`, `Ctrl+T`, `Ctrl+S`, `Ctrl+G`, and `Tab` continue to function as before.
 
-- [ ] **Step 5.5: Commit Task 5**
+- [x] **Step 5.5: Commit Task 5**
   `git commit -am "feat(ui): integrate k9s navigation, pages overlay, and single-key shortcuts"`
 
 ---

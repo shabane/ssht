@@ -148,13 +148,13 @@
 - Modify: `tmuxUtils/connectAll.go` (or `sshUtils/editor.go`)
 - Test: `sshUtils/editor_test.go`
 
-- [ ] **Step 4.1: Write unit test for editor command builder**
+- [x] **Step 4.1: Write unit test for editor command builder**
   Test `BuildEditorCommand(editor, file string, line int) (string, []string)`:
   - For `vim`, `nvim`, `vi`, `nano`: returns `+<line>` flag.
   - For `code`: returns `-g file:line`.
   - Fallback if `$EDITOR` is empty: defaults to `nano` or `vim`.
 
-- [ ] **Step 4.2: Implement `LaunchEditor(host string)`**
+- [x] **Step 4.2: Implement `LaunchEditor(host string)`**
   In `sshUtils/editor.go`:
   - Retrieve `HostsMeta[host]`.
   - If `SourceFile == ""` fallback to `CustomConfigPath` or `~/.ssh/config`.
@@ -170,10 +170,10 @@
     ```
   - Re-run `sshUtils.GetAllHosts(CustomConfigPath)` to reload any changes made by the user.
 
-- [ ] **Step 4.3: Run tests and verify**
+- [x] **Step 4.3: Run tests and verify**
   Run `go test -v ./sshUtils` and ensure editor command builders pass tests.
 
-- [ ] **Step 4.4: Commit Task 4**
+- [x] **Step 4.4: Commit Task 4**
   `git commit -am "feat(editor): support launching editor directly at host line"`
 
 ---

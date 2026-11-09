@@ -61,7 +61,7 @@ func main() {
 	}
 
 	tviewUtils.MainBox.
-		AddItem(component.SearchBox, 3, 0, false).
+		AddItem(component.SearchBox, 0, 0, false).
 		AddItem(component.ListBox, 0, 1, true).
 		AddItem(component.Footer, 1, 0, false)
 
@@ -108,6 +108,21 @@ func main() {
 				}
 			}
 		}()
+	}
+
+	showSearchBox := func(initialText string) {
+		tviewUtils.MainBox.ResizeItem(component.SearchBox, 3, 0)
+		if initialText != "" {
+			component.SearchBox.SetText(initialText)
+		}
+		tviewUtils.App.SetFocus(component.SearchBox)
+	}
+
+	hideSearchBox := func() {
+		stopPing.Store(false)
+		component.SearchBox.SetText("")
+		tviewUtils.MainBox.ResizeItem(component.SearchBox, 0, 0)
+		tviewUtils.App.SetFocus(component.ListBox)
 	}
 
 	tviewUtils.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -193,17 +208,17 @@ func main() {
 			return nil
 		} else if event.Key() == tcell.KeyTab || keyName == "Tab" {
 			if isListBoxFocused {
-				tviewUtils.App.SetFocus(component.SearchBox)
+				showSearchBox("")
 			} else {
-				tviewUtils.App.SetFocus(component.ListBox)
+				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" {
+					hideSearchBox()
+				} else {
+					tviewUtils.App.SetFocus(component.ListBox)
+				}
 			}
 			return nil
 		} else if event.Key() == tcell.KeyEscape || keyName == "Esc" || keyName == "Escape" {
-			stopPing.Store(false)
-			// Clearing the search text triggers the search handler, which
-			// repopulates the list with every host and requests a fresh ping.
-			component.SearchBox.SetText("")
-			tviewUtils.App.SetFocus(component.ListBox)
+			hideSearchBox()
 			return nil
 		}
 
@@ -214,7 +229,12 @@ func main() {
 				return event
 			}
 			if event.Key() == tcell.KeyEnter || keyName == "Enter" {
-				tviewUtils.App.SetFocus(component.ListBox)
+				text := strings.TrimSpace(component.SearchBox.GetText())
+				if text == "" || text == ":" {
+					hideSearchBox()
+				} else {
+					tviewUtils.App.SetFocus(component.ListBox)
+				}
 				return nil
 			}
 			return event
@@ -324,11 +344,10 @@ func main() {
 			tmuxUtils.OpenSelectedInTmux(tmuxUtils.SyncedTailedPane, getActiveHosts())
 			return nil
 		} else if isRuneKey('/') {
-			tviewUtils.App.SetFocus(component.SearchBox)
+			showSearchBox("")
 			return nil
 		} else if isRuneKey(':') {
-			component.SearchBox.SetText(":")
-			tviewUtils.App.SetFocus(component.SearchBox)
+			showSearchBox(":")
 			return nil
 		}
 

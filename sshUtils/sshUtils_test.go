@@ -404,3 +404,310 @@ Include conf.d/*.conf
 		t.Errorf("expected sub-host HostName '10.20.30.40', got %q", subMeta.HostName)
 	}
 }
+
+func TestSearchHostname_AdvancedQueries(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validKey := filepath.Join(tmpDir, "id_valid")
+	if err := os.WriteFile(validKey, []byte("valid-key"), 0600); err != nil {
+		t.Fatalf("failed to write valid key: %v", err)
+	}
+
+	insecureKey := filepath.Join(tmpDir, "id_insecure")
+	if err := os.WriteFile(insecureKey, []byte("insecure-key"), 0644); err != nil {
+		t.Fatalf("failed to write insecure key: %v", err)
+	}
+	if err := os.Chmod(insecureKey, 0644); err != nil {
+		t.Fatalf("failed to chmod: %v", err)
+	}
+
+	missingKey := filepath.Join(tmpDir, "id_missing")
+
+	configPath := filepath.Join(tmpDir, "config")
+	configContent := fmt.Sprintf(`
+Host prod-web
+    HostName 192.168.1.10
+    User deploy
+    Tag prod web
+    IdentityFile %s
+
+Host prod-db
+    HostName 192.168.1.20
+    User postgres
+    Tag prod db database
+    ProxyJump bastion.corp
+    LocalForward 5432 127.0.0.1:5432
+
+Host bastion-box
+    HostName 10.0.0.254
+    User admin
+    Tag infra
+    ProxyCommand ssh -W %%h:%%p gateway.internal
+    DynamicForward 1080
+
+Host backup-runner
+    HostName 10.0.0.50
+    User backup
+    Tag backup
+    RemoteForward 8080 127.0.0.1:80
+    RemoteCommand run-backup.sh
+
+Host badkey-missing
+    HostName 10.0.0.60
+    User ubuntu
+    Tag test
+    IdentityFile %s
+
+Host badkey-insecure
+    HostName 10.0.0.70
+    User ubuntu
+    IdentityFile %s
+
+Host staging-api
+    HostName api.staging.internal
+    User ubuntu
+    Tag staging api
+
+Host plain-host
+    HostName 10.0.0.99
+    User guest
+`, validKey, missingKey, insecureKey)
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	hosts, err := GetAllHosts(configPath)
+	if err != nil {
+		t.Fatalf("GetAllHosts failed: %v", err)
+	}
+
+	allExpected := []string{
+		"prod-web", "prod-db", "bastion-box", "backup-runner",
+		"badkey-missing", "badkey-insecure", "staging-api", "plain-host",
+	}
+
+	tests := []struct {
+		name     string
+		query    string
+		expected []string
+	}{
+		// Tag prefix (#)
+		{
+			name:     "#prod matches prod hosts",
+			query:    "#prod",
+			expected: []string{"prod-web", "prod-db"},
+		},
+		{
+			name:     "#web matches web host",
+			query:    "#web",
+			expected: []string{"prod-web"},
+		},
+		{
+			name:     "#db matches db host",
+			query:    "#db",
+			expected: []string{"prod-db"},
+		},
+		{
+			name:     "#infra matches bastion",
+			query:    "#infra",
+			expected: []string{"bastion-box"},
+		},
+		{
+			name:     "# prefix alone matches all tagged hosts",
+			query:    "#",
+			expected: []string{"prod-web", "prod-db", "bastion-box", "backup-runner", "badkey-missing", "staging-api"},
+		},
+
+		// Tag prefix (tag:)
+		{
+			name:     "tag:prod matches prod hosts",
+			query:    "tag:prod",
+			expected: []string{"prod-web", "prod-db"},
+		},
+		{
+			name:     "tag:api matches staging-api",
+			query:    "tag:api",
+			expected: []string{"staging-api"},
+		},
+		{
+			name:     "TAG:PROD case-insensitive",
+			query:    "TAG:PROD",
+			expected: []string{"prod-web", "prod-db"},
+		},
+
+		// Colon directive (:tag <val>, :t <val>)
+		{
+			name:     ":tag prod matches prod hosts",
+			query:    ":tag prod",
+			expected: []string{"prod-web", "prod-db"},
+		},
+		{
+			name:     ":tag database matches prod-db",
+			query:    ":tag database",
+			expected: []string{"prod-db"},
+		},
+		{
+			name:     ":t infra matches bastion-box",
+			query:    ":t infra",
+			expected: []string{"bastion-box"},
+		},
+		{
+			name:     ":t web matches prod-web",
+			query:    ":t web",
+			expected: []string{"prod-web"},
+		},
+
+		// Colon directive (:proxy, :bastion)
+		{
+			name:     ":proxy matches ProxyJump and ProxyCommand hosts",
+			query:    ":proxy",
+			expected: []string{"prod-db", "bastion-box"},
+		},
+		{
+			name:     ":bastion matches ProxyJump and ProxyCommand hosts",
+			query:    ":bastion",
+			expected: []string{"prod-db", "bastion-box"},
+		},
+		{
+			name:     ":PROXY case-insensitive",
+			query:    ":PROXY",
+			expected: []string{"prod-db", "bastion-box"},
+		},
+
+		// Colon directive (:fwd, :forward, :tunnel)
+		{
+			name:     ":fwd matches port forward hosts",
+			query:    ":fwd",
+			expected: []string{"prod-db", "bastion-box", "backup-runner"},
+		},
+		{
+			name:     ":forward matches port forward hosts",
+			query:    ":forward",
+			expected: []string{"prod-db", "bastion-box", "backup-runner"},
+		},
+		{
+			name:     ":tunnel matches port forward hosts",
+			query:    ":tunnel",
+			expected: []string{"prod-db", "bastion-box", "backup-runner"},
+		},
+
+		// Colon directive (:cmd)
+		{
+			name:     ":cmd matches RemoteCommand hosts",
+			query:    ":cmd",
+			expected: []string{"backup-runner"},
+		},
+
+		// Colon directive (:keys, :badkeys)
+		{
+			name:     ":keys matches hosts with configured IdentityFile",
+			query:    ":keys",
+			expected: []string{"prod-web", "badkey-missing", "badkey-insecure"},
+		},
+		{
+			name:     ":badkeys matches missing or insecure key hosts",
+			query:    ":badkeys",
+			expected: []string{"badkey-missing", "badkey-insecure"},
+		},
+
+		// Colon directive (:all, :)
+		{
+			name:     ":all matches all hosts",
+			query:    ":all",
+			expected: allExpected,
+		},
+		{
+			name:     ": alone matches all hosts",
+			query:    ":",
+			expected: allExpected,
+		},
+		{
+			name:     ":unknown matches nothing",
+			query:    ":nonexistent",
+			expected: nil,
+		},
+
+		// Inverted matches (!<val>)
+		{
+			name:  "!staging excludes staging-api",
+			query: "!staging",
+			expected: []string{
+				"prod-web", "prod-db", "bastion-box", "backup-runner",
+				"badkey-missing", "badkey-insecure", "plain-host",
+			},
+		},
+		{
+			name:  "!prod excludes prod hosts",
+			query: "!prod",
+			expected: []string{
+				"bastion-box", "backup-runner", "badkey-missing", "badkey-insecure",
+				"staging-api", "plain-host",
+			},
+		},
+		{
+			name:     "! alone matches all hosts",
+			query:    "!",
+			expected: allExpected,
+		},
+
+		// Fallback substring matching with tags
+		{
+			name:     "fallback substring matches tag 'database'",
+			query:    "database",
+			expected: []string{"prod-db"},
+		},
+		{
+			name:     "fallback substring matches user 'guest'",
+			query:    "guest",
+			expected: []string{"plain-host"},
+		},
+		{
+			name:     "empty query matches all",
+			query:    "",
+			expected: allExpected,
+		},
+		{
+			name:     "whitespace query matches all",
+			query:    "   ",
+			expected: allExpected,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results := SearchHostname(hosts, tt.query)
+			if len(results) != len(tt.expected) {
+				t.Fatalf("query %q: expected %d hosts (%v), got %d (%v)",
+					tt.query, len(tt.expected), tt.expected, len(results), results)
+			}
+			for i, exp := range tt.expected {
+				if results[i] != exp {
+					t.Errorf("query %q at index %d: expected %s, got %s", tt.query, i, exp, results[i])
+				}
+			}
+		})
+	}
+}
+
+func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
+	// Test that SearchHostname does not panic and resolves directives when HostsMeta is unpopulated
+	oldMeta := HostsMeta
+	defer func() { HostsMeta = oldMeta }()
+	HostsMeta = make(map[string]HostMetadata)
+
+	results := SearchHostname([]string{"some-host"}, "")
+	if len(results) != 1 || results[0] != "some-host" {
+		t.Errorf("expected ['some-host'], got %v", results)
+	}
+
+	results = SearchHostname([]string{"some-host"}, "some")
+	if len(results) != 1 || results[0] != "some-host" {
+		t.Errorf("expected ['some-host'], got %v", results)
+	}
+
+	results = SearchHostname([]string{"some-host"}, "#nonexistent")
+	if len(results) != 0 {
+		t.Errorf("expected 0 results, got %v", results)
+	}
+}

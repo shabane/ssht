@@ -94,7 +94,7 @@
 - Modify: `sshUtils/sshUtils.go`
 - Test: `sshUtils/sshUtils_test.go`
 
-- [ ] **Step 2.1: Write failing test for `SearchHostname` with tags and prefixes**
+- [x] **Step 2.1: Write failing test for `SearchHostname` with tags and prefixes**
   In `sshUtils/sshUtils_test.go`:
   - Query `#prod` or `tag:prod`: matches only hosts with tag `prod`.
   - Query `:proxy`: matches only hosts with `ProxyJump` or `ProxyCommand`.
@@ -103,17 +103,17 @@
   - Query `:badkeys`: matches hosts with missing or unreadable `IdentityFile`.
   - Query `!staging`: matches hosts whose alias/tags do not contain `staging`.
 
-- [ ] **Step 2.2: Implement prefix and selector matching in `SearchHostname`**
+- [x] **Step 2.2: Implement prefix and selector matching in `SearchHostname`**
   In `sshUtils/sshUtils.go`, inspect `key`:
   - If starts with `:`: route to directive filters (`:proxy`, `:fwd`, `:tunnel`, `:cmd`, `:badkeys`, `:keys`, `:tag <name>`).
   - If starts with `#` or `tag:`: match against `HostsMeta[host].Tags`.
   - If starts with `!`: invert match.
   - Otherwise, fallback to existing substring matching on alias, hostname, user, user@hostname, and bastion.
 
-- [ ] **Step 2.3: Run tests and verify**
+- [x] **Step 2.3: Run tests and verify**
   Run `go test -v ./sshUtils` to ensure existing and new search queries pass.
 
-- [ ] **Step 2.4: Commit Task 2**
+- [x] **Step 2.4: Commit Task 2**
   `git commit -am "feat(sshUtils): support tag prefixes, inverted filters, and colon directives"`
 
 ---

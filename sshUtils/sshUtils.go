@@ -143,9 +143,11 @@ func populateHostMetadata(host, sourceFile string, line int) {
 		return
 	}
 
-	absSource, err := filepath.Abs(sourceFile)
-	if err == nil {
-		sourceFile = absSource
+	if sourceFile != "" {
+		absSource, err := filepath.Abs(sourceFile)
+		if err == nil {
+			sourceFile = absSource
+		}
 	}
 
 	hostname := getDirective(host, "hostname")
@@ -309,44 +311,227 @@ func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]strin
 	return hosts, nil
 }
 
+func getHostMeta(host string) HostMetadata {
+	if HostsMeta == nil {
+		HostsMeta = make(map[string]HostMetadata)
+	}
+	if meta, ok := HostsMeta[host]; ok {
+		return meta
+	}
+	populateHostMetadata(host, "", 0)
+	return HostsMeta[host]
+}
+
+func hostHasTag(tags []string, val string) bool {
+	lowerVal := strings.ToLower(val)
+	if lowerVal == "" {
+		return len(tags) > 0
+	}
+	for _, t := range tags {
+		if strings.Contains(strings.ToLower(t), lowerVal) {
+			return true
+		}
+	}
+	return false
+}
+
 func SearchHostname(hosts []string, key string) []string {
-	// Literal, case-insensitive substring match against host alias, configured
-	// HostName (IP/domain), and configured User. Using strings.Contains avoids
-	// treating regex metacharacters as wildcards and cannot panic on input.
-	key = strings.ToLower(key)
+	trimmed := strings.TrimSpace(key)
+	if trimmed == "" {
+		return hosts
+	}
+
+	// 1. Colon Directives (: prefix)
+	if strings.HasPrefix(trimmed, ":") {
+		lower := strings.ToLower(trimmed)
+		switch {
+		case lower == ":all":
+			return hosts
+		case lower == ":proxy" || lower == ":bastion":
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if meta.ProxyJump != "" || meta.ProxyCommand != "" {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":fwd" || lower == ":forward" || lower == ":tunnel":
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if meta.LocalForward != "" || meta.DynamicForward != "" || meta.RemoteForward != "" {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":cmd":
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if meta.RemoteCommand != "" {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":keys":
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if meta.IdentityFile != "" {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":badkeys":
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if meta.IdentityFile != "" && (!meta.KeyExists || meta.KeyError != "") {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":tag" || strings.HasPrefix(lower, ":tag ") || strings.HasPrefix(lower, ":tag=") || strings.HasPrefix(lower, ":tag:"):
+			val := strings.TrimSpace(strings.TrimLeft(trimmed[4:], " =:"))
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if hostHasTag(meta.Tags, val) {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":t" || strings.HasPrefix(lower, ":t ") || strings.HasPrefix(lower, ":t=") || strings.HasPrefix(lower, ":t:"):
+			val := strings.TrimSpace(strings.TrimLeft(trimmed[2:], " =:"))
+			var matched []string
+			for _, host := range hosts {
+				meta := getHostMeta(host)
+				if hostHasTag(meta.Tags, val) {
+					matched = append(matched, host)
+				}
+			}
+			return matched
+		case lower == ":":
+			return hosts
+		default:
+			return nil
+		}
+	}
+
+	// 2. Tag Prefixes (# or tag:)
+	if strings.HasPrefix(trimmed, "#") {
+		val := strings.TrimSpace(trimmed[1:])
+		var matched []string
+		for _, host := range hosts {
+			meta := getHostMeta(host)
+			if hostHasTag(meta.Tags, val) {
+				matched = append(matched, host)
+			}
+		}
+		return matched
+	}
+
+	if strings.HasPrefix(strings.ToLower(trimmed), "tag:") {
+		val := strings.TrimSpace(trimmed[4:])
+		var matched []string
+		for _, host := range hosts {
+			meta := getHostMeta(host)
+			if hostHasTag(meta.Tags, val) {
+				matched = append(matched, host)
+			}
+		}
+		return matched
+	}
+
+	// 3. Inverted Matches (! prefix)
+	if strings.HasPrefix(trimmed, "!") {
+		val := strings.TrimSpace(trimmed[1:])
+		if val == "" {
+			return hosts
+		}
+		lowerVal := strings.ToLower(val)
+		var matched []string
+		for _, host := range hosts {
+			meta := getHostMeta(host)
+			alias := meta.Alias
+			if alias == "" {
+				alias = host
+			}
+			if strings.Contains(strings.ToLower(alias), lowerVal) {
+				continue
+			}
+			if meta.HostName != "" && strings.Contains(strings.ToLower(meta.HostName), lowerVal) {
+				continue
+			}
+			if meta.User != "" && strings.Contains(strings.ToLower(meta.User), lowerVal) {
+				continue
+			}
+			tagMatched := false
+			for _, t := range meta.Tags {
+				if strings.Contains(strings.ToLower(t), lowerVal) {
+					tagMatched = true
+					break
+				}
+			}
+			if tagMatched {
+				continue
+			}
+			matched = append(matched, host)
+		}
+		return matched
+	}
+
+	// 4. Fallback substring matching
+	lowerKey := strings.ToLower(trimmed)
 	var foundedHosts []string
 
 	for _, host := range hosts {
+		meta := getHostMeta(host)
+		alias := meta.Alias
+		if alias == "" {
+			alias = host
+		}
+
 		// Match against host alias
-		if strings.Contains(strings.ToLower(host), key) {
+		if strings.Contains(strings.ToLower(alias), lowerKey) {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}
 
-		hostname := ssh_config.Get(host, "hostname")
-		user := ssh_config.Get(host, "user")
-
 		// Match against configured HostName (IP or domain)
-		if hostname != "" && strings.Contains(strings.ToLower(hostname), key) {
+		if meta.HostName != "" && strings.Contains(strings.ToLower(meta.HostName), lowerKey) {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}
 
 		// Match against configured User
-		if user != "" && strings.Contains(strings.ToLower(user), key) {
+		if meta.User != "" && strings.Contains(strings.ToLower(meta.User), lowerKey) {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}
 
 		// Match against user@hostname combination (e.g. "root@192.168.")
-		if user != "" && hostname != "" && strings.Contains(strings.ToLower(user+"@"+hostname), key) {
+		if meta.User != "" && meta.HostName != "" && strings.Contains(strings.ToLower(meta.User+"@"+meta.HostName), lowerKey) {
+			foundedHosts = append(foundedHosts, host)
+			continue
+		}
+
+		// Match against tags
+		tagMatched := false
+		for _, t := range meta.Tags {
+			if strings.Contains(strings.ToLower(t), lowerKey) {
+				tagMatched = true
+				break
+			}
+		}
+		if tagMatched {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}
 
 		// Match against ProxyJump bastion host
-		proxyJump := ssh_config.Get(host, "proxyjump")
-		if proxyJump != "" && strings.Contains(strings.ToLower(proxyJump), key) {
+		if meta.ProxyJump != "" && strings.Contains(strings.ToLower(meta.ProxyJump), lowerKey) {
 			foundedHosts = append(foundedHosts, host)
 			continue
 		}

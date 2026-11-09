@@ -41,7 +41,7 @@
 - Modify: `sshUtils/variables.go`
 - Test: `sshUtils/sshUtils_test.go`
 
-- [ ] **Step 1.1: Define `HostMetadata` struct in `sshUtils/variables.go`**
+- [x] **Step 1.1: Define `HostMetadata` struct in `sshUtils/variables.go`**
   Add `HostMetadata` struct with fields:
   ```go
   type HostMetadata struct {
@@ -65,13 +65,13 @@
   ```
   Add global metadata registry: `var HostsMeta = make(map[string]HostMetadata)`.
 
-- [ ] **Step 1.2: Write failing unit test for `HostMetadata` extraction and line tracking**
+- [x] **Step 1.2: Write failing unit test for `HostMetadata` extraction and line tracking**
   In `sshUtils/sshUtils_test.go`, test that parsing a sample SSH config with `Tag prod web`, `IdentityFile ~/.ssh/id_test`, `RemoteCommand htop`, `LocalForward 5432 127.0.0.1:5432` populates `HostsMeta` with accurate line numbers and extracted fields.
 
-- [ ] **Step 1.3: Implement line tracking in `parseConfigFile`**
+- [x] **Step 1.3: Implement line tracking in `parseConfigFile`**
   Read the config file line-by-line or record line numbers where `Host <pattern>` declarations occur, storing `SourceFile` and `SourceLine`.
 
-- [ ] **Step 1.4: Implement `populateHostMetadata` in `sshUtils/sshUtils.go`**
+- [x] **Step 1.4: Implement `populateHostMetadata` in `sshUtils/sshUtils.go`**
   For each unique host, query `ssh_config.Get(...)` for:
   - `tag` -> split with `strings.Fields` into `Tags`
   - `identityfile` -> resolve `~/` expansion, check `os.Stat`, set `KeyExists` and `KeyError`
@@ -80,10 +80,10 @@
   - `proxyjump`, `proxycommand`
   Store in `HostsMeta[host]`.
 
-- [ ] **Step 1.5: Run tests and verify**
+- [x] **Step 1.5: Run tests and verify**
   Run `go test -v ./sshUtils` and ensure all tests pass.
 
-- [ ] **Step 1.6: Commit Task 1**
+- [x] **Step 1.6: Commit Task 1**
   `git commit -am "feat(sshUtils): extract rich host metadata and track source line numbers"`
 
 ---
@@ -229,3 +229,4 @@
 
 - [ ] **Step 6.3: Commit Task 6**
   `git commit -am "docs: update readme and roadmap with k9s commands and ssh_config features"`
+

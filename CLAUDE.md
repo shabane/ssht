@@ -36,7 +36,7 @@ The app is a single global UI tree mutated by event handlers — there is no cen
    - `e` launches `$EDITOR` directly at the host's source line (`sshUtils.LaunchEditorByHost`), suspending the TUI and reloading configs upon exit.
    - `s` or `Enter` opens in tmux; `w` connects directly (no tmux); `t` connects via remote tmux; `c` runs `RemoteCommand` (if defined).
    - `a` connects all active/selected hosts in tiled tmux; `o` connects in synced panes.
-   - `<` or `>` activates on-demand remote command execution across selected hosts in tmux (supports interactive tools like `htop` via `-t` and keeps short-lived outputs visible via `remain-on-exit`).
+   - `<` or `>` activates on-demand remote command execution across selected hosts in tmux (supports interactive tools like `htop` via `-t` and automatically returns to `ssht` upon exit).
    - `/` activates filter mode, showing and focusing SearchBox; `:` activates command mode with initial `:`.
    - `Esc` clears filter, repopulates list, and collapses SearchBox back to hidden state.
 3. Typing in the search box triggers `SearchBox.SetChangedFunc` (in `component/searchBox.go`), which refills the list via `sshUtils.SearchHostname`. Supports `#tag`, `tag:<name>`, colon directives (`:proxy`, `:fwd`, `:cmd`, `:badkeys`, `:keys`, `:tag <name>`, `:all`), and inverted matches (`!<term>`).

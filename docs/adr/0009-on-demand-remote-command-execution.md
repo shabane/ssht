@@ -28,7 +28,7 @@ In `ssht`, users can already select multiple servers using `Space` or `:select <
      - Pass `-t` to `ssh` for pseudo-terminal allocation, ensuring interactive curses-based tools like `htop`, `top`, and `less` function correctly.
      - Append the custom SSH configuration (`-F <path>`) if active.
      - Append the remote command as the final argument to `ssh`.
-     - Enable `remain-on-exit on` in the tmux session/window options so short-lived commands (e.g., `df -h`, `uptime`) do not close their tmux panes before the user can read the output.
+     - Allow standard lifecycle termination upon process exit so that quitting interactive tools (e.g., `q` in `htop`, `Ctrl+C` in `journalctl -f`) cleanly closes panes and returns immediately to `ssht` without leaving dead panes.
    - Target host resolution:
      - If one or more hosts are selected with checkboxes (`component.GetSelectedHosts()`), target all of them.
      - If no hosts are checked, target the currently highlighted host in `ListBox`.
@@ -42,5 +42,5 @@ In `ssht`, users can already select multiple servers using `Space` or `:select <
 - Allows running any remote command on one or many servers on demand without touching `ssh_config`.
 - Multi-host tiled panes provide instantaneous side-by-side visibility across clusters.
 - Pseudo-terminal allocation (`-t`) ensures full interactive support for curses applications.
-- Retains pane contents for instant-exit commands via `remain-on-exit`.
+- Smooth, automatic session termination and clean return to `ssht` when the remote command exits.
 - 100% backward compatible with existing tmux connections and keyboard shortcuts.

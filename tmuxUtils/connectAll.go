@@ -61,10 +61,6 @@ func SessionCreatorWithCommand(hostname string, remoteCmd string) {
 			fmt.Printf("Error creating session: %v\n", err)
 			return
 		}
-
-		if remoteCmd != "" {
-			_ = exec.Command("tmux", "set-option", "-t", tmuxId, "remain-on-exit", "on").Run()
-		}
 	}
 }
 

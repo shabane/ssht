@@ -16,7 +16,6 @@ import (
 	"ssht/tviewUtils"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 )
 
 var (
@@ -123,6 +122,7 @@ func main() {
 		component.SearchBox.SetText("")
 		tviewUtils.MainBox.ResizeItem(component.SearchBox, 0, 0)
 		tviewUtils.App.SetFocus(component.ListBox)
+		component.RestoreNormalFooter()
 	}
 
 	tviewUtils.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -183,32 +183,12 @@ func main() {
 			return nil
 		} else if isCtrl(tcell.KeyCtrlG, "Ctrl+G") {
 			stopPing.Store(true)
-			component.Clear()
-			component.ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
-			component.ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
-			component.ListBox.AddItem("Space", fmt.Sprintf("Toggle Selection (%s) on List", tview.Escape("[x]")), 0, nil)
-			component.ListBox.AddItem("s", "Open Selected Host in Tmux (or Enter)", 0, nil)
-			component.ListBox.AddItem("d", "Describe Selected Host (Details & Metadata)", 0, nil)
-			component.ListBox.AddItem("e", "Edit SSH Config for Selected Host", 0, nil)
-			component.ListBox.AddItem("w", "Connect Directly to Selected Host (No Tmux)", 0, nil)
-			component.ListBox.AddItem("c", "Run RemoteCommand for Selected Host", 0, nil)
-			component.ListBox.AddItem("a", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
-			component.ListBox.AddItem("o", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
-			component.ListBox.AddItem("/", "Focus Search Box", 0, nil)
-			component.ListBox.AddItem(":", "Command Prompt Mode (:tag, :proxy, :fwd, etc.)", 0, nil)
-			component.ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
-			component.ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
-			component.ListBox.AddItem("CTRL+T", "Connect to Selected Host with Remote Tmux", 0, nil)
-			component.ListBox.AddItem("CTRL+A", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
-			component.ListBox.AddItem("CTRL+O", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
-			component.ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)
-			component.ListBox.AddItem("Esc", "Back / Clear Search", 0, nil)
-			component.ListBox.AddItem("Enter", "Open Selected Host", 0, nil)
-			component.ListBox.AddItem("CTRL+C", "Quit", 0, nil)
+			component.ShowHelpGuide()
 			return nil
 		} else if event.Key() == tcell.KeyTab || keyName == "Tab" {
 			if isListBoxFocused {
 				showSearchBox("")
+				component.ShowSearchFooterHints()
 			} else {
 				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" {
 					hideSearchBox()
@@ -219,6 +199,7 @@ func main() {
 			return nil
 		} else if event.Key() == tcell.KeyEscape || keyName == "Esc" || keyName == "Escape" {
 			hideSearchBox()
+			component.RefreshList()
 			return nil
 		}
 
@@ -232,9 +213,25 @@ func main() {
 				text := strings.TrimSpace(component.SearchBox.GetText())
 				if text == "" || text == ":" {
 					hideSearchBox()
-				} else {
-					tviewUtils.App.SetFocus(component.ListBox)
+					return nil
 				}
+				if strings.HasPrefix(text, ":") {
+					res := component.ExecuteCommand(text, configPath)
+					if res.Action == "filter" {
+						tviewUtils.App.SetFocus(component.ListBox)
+						if res.Message != "" {
+							component.SetFooterMessage(res.Message)
+						}
+					} else {
+						// Action / control command (:q, :reload, :select, :clear, :ping, :sort) or unknown
+						hideSearchBox()
+						if res.Message != "" {
+							component.SetFooterMessage(res.Message)
+						}
+					}
+					return nil
+				}
+				tviewUtils.App.SetFocus(component.ListBox)
 				return nil
 			}
 			return event
@@ -345,9 +342,11 @@ func main() {
 			return nil
 		} else if isRuneKey('/') {
 			showSearchBox("")
+			component.ShowSearchFooterHints()
 			return nil
 		} else if isRuneKey(':') {
 			showSearchBox(":")
+			component.ShowCommandFooterHints()
 			return nil
 		}
 

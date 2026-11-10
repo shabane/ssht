@@ -1,7 +1,9 @@
 package component
 
 import (
+	"bytes"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"sync"
@@ -250,12 +252,196 @@ func SortVisibleHosts() {
 	}
 }
 
+// SelectAllVisible selects all currently visible hosts in the ListBox.
+func SelectAllVisible() int {
+	mu.Lock()
+	for i, h := range visibleHosts {
+		selectedHostsMap[h] = true
+		color := hostColors[h]
+		ListBox.SetItemText(i, formatHostLocked(h, color), "")
+	}
+	count := len(selectedHostsMap)
+	n := len(visibleHosts)
+	mu.Unlock()
+
+	if OnSelectionChanged != nil {
+		OnSelectionChanged(count)
+	}
+	return n
+}
+
+// SelectMatchingVisible selects visible hosts whose alias or tags match query.
+func SelectMatchingVisible(query string) int {
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return 0
+	}
+	lowerQ := strings.ToLower(q)
+	tagQ := strings.TrimPrefix(lowerQ, "#")
+	tagQ = strings.TrimPrefix(tagQ, "tag:")
+
+	mu.Lock()
+	matchedCount := 0
+	for i, h := range visibleHosts {
+		meta := sshUtils.GetHostMeta(h)
+		alias := meta.Alias
+		if alias == "" {
+			alias = h
+		}
+		matched := strings.Contains(strings.ToLower(alias), lowerQ)
+		if !matched {
+			for _, t := range meta.Tags {
+				if strings.Contains(strings.ToLower(t), tagQ) || strings.Contains(strings.ToLower(t), lowerQ) {
+					matched = true
+					break
+				}
+			}
+		}
+		if matched {
+			selectedHostsMap[h] = true
+			matchedCount++
+			color := hostColors[h]
+			ListBox.SetItemText(i, formatHostLocked(h, color), "")
+		}
+	}
+	totalSelected := len(selectedHostsMap)
+	mu.Unlock()
+
+	if OnSelectionChanged != nil {
+		OnSelectionChanged(totalSelected)
+	}
+	return matchedCount
+}
+
+// SortVisibleByName sorts visible hosts alphabetically by host alias.
+func SortVisibleByName() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	sort.SliceStable(visibleHosts, func(i, j int) bool {
+		a := strings.ToLower(visibleHosts[i])
+		b := strings.ToLower(visibleHosts[j])
+		if a != b {
+			return a < b
+		}
+		return visibleHosts[i] < visibleHosts[j]
+	})
+
+	ListBox.Clear()
+	for _, h := range visibleHosts {
+		host := h
+		color := hostColors[host]
+		var fn func()
+		if DefaultSelectFunc != nil {
+			fn = DefaultSelectFunc(host)
+		}
+		ListBox.AddItem(formatHostLocked(host, color), "", 0, fn)
+	}
+}
+
+// SortVisibleByIP sorts visible hosts by resolved IP address / HostName.
+func SortVisibleByIP() {
+	mu.Lock()
+	defer mu.Unlock()
+
+	getIP := func(h string) string {
+		meta := sshUtils.GetHostMeta(h)
+		if meta.HostName != "" {
+			return meta.HostName
+		}
+		return ssh_config.Get(h, "hostname")
+	}
+
+	sort.SliceStable(visibleHosts, func(i, j int) bool {
+		rawI := strings.TrimSpace(strings.ToLower(getIP(visibleHosts[i])))
+		rawJ := strings.TrimSpace(strings.ToLower(getIP(visibleHosts[j])))
+
+		ipI := net.ParseIP(rawI)
+		ipJ := net.ParseIP(rawJ)
+
+		if ipI != nil && ipJ != nil {
+			cmp := bytes.Compare(ipI.To16(), ipJ.To16())
+			if cmp != 0 {
+				return cmp < 0
+			}
+		} else if ipI != nil && ipJ == nil {
+			return true
+		} else if ipI == nil && ipJ != nil {
+			return false
+		} else {
+			if rawI != rawJ {
+				return rawI < rawJ
+			}
+		}
+
+		return strings.ToLower(visibleHosts[i]) < strings.ToLower(visibleHosts[j])
+	})
+
+	ListBox.Clear()
+	for _, h := range visibleHosts {
+		host := h
+		color := hostColors[host]
+		var fn func()
+		if DefaultSelectFunc != nil {
+			fn = DefaultSelectFunc(host)
+		}
+		ListBox.AddItem(formatHostLocked(host, color), "", 0, fn)
+	}
+}
+
+// ShowEmptyStateNotice renders an informative non-selectable placeholder message in ListBox.
+func ShowEmptyStateNotice(title, subtitle string) {
+	mu.Lock()
+	defer mu.Unlock()
+	ListBox.Clear()
+	visibleHosts = nil
+	ListBox.AddItem(title, subtitle, 0, nil)
+}
+
+// ShowHelpGuide displays the keyboard shortcuts guide in ListBox.
+func ShowHelpGuide() {
+	mu.Lock()
+	defer mu.Unlock()
+	ListBox.Clear()
+	visibleHosts = nil
+	ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
+	ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
+	ListBox.AddItem("Space", fmt.Sprintf("Toggle Selection (%s) on List", tview.Escape("[x]")), 0, nil)
+	ListBox.AddItem("s", "Open Selected Host in Tmux (or Enter)", 0, nil)
+	ListBox.AddItem("d", "Describe Selected Host (Details & Metadata)", 0, nil)
+	ListBox.AddItem("e", "Edit SSH Config for Selected Host", 0, nil)
+	ListBox.AddItem("w", "Connect Directly to Selected Host (No Tmux)", 0, nil)
+	ListBox.AddItem("c", "Run RemoteCommand for Selected Host", 0, nil)
+	ListBox.AddItem("a", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
+	ListBox.AddItem("o", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
+	ListBox.AddItem("/", "Focus Search Box", 0, nil)
+	ListBox.AddItem(":", "Command Prompt Mode (:tag, :proxy, :fwd, etc.)", 0, nil)
+	ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
+	ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
+	ListBox.AddItem("CTRL+T", "Connect to Selected Host with Remote Tmux", 0, nil)
+	ListBox.AddItem("CTRL+A", "Connect To All Filtered/Selected Hosts In Tailed Mode", 0, nil)
+	ListBox.AddItem("CTRL+O", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
+	ListBox.AddItem("CTRL+N", "Connect To All Filtered/Selected Hosts Each In New Window", 0, nil)
+	ListBox.AddItem("Esc", "Back / Clear Search", 0, nil)
+	ListBox.AddItem("Enter", "Open Selected Host", 0, nil)
+	ListBox.AddItem("CTRL+C", "Quit", 0, nil)
+}
+
 // RefreshList reloads and repopulates visible hosts from sshUtils.AllHosts,
 // respecting any active query in SearchBox, and requests a reachability ping.
 func RefreshList() {
 	text := ""
 	if SearchBox != nil {
-		text = SearchBox.GetText()
+		t := strings.TrimSpace(SearchBox.GetText())
+		if strings.HasPrefix(t, ":") {
+			if IsViewFilter(t) {
+				text = t
+			} else {
+				text = ""
+			}
+		} else {
+			text = t
+		}
 	}
 	Clear()
 	for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {

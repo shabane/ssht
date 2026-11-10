@@ -53,3 +53,4 @@ Implement a unified command dispatcher `component.ExecuteCommand(raw string) Com
 - Allows instant batch selection (`:select all` or `:select prod`).
 - Solves the empty-list confusion with explicit "no matches" feedback.
 - Clean separation: `/` is for fast inline text searching, `:` is for commands and actions.
+

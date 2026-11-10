@@ -1,6 +1,8 @@
 package component
 
 import (
+	"strings"
+
 	"ssht/sshUtils"
 
 	"github.com/gdamore/tcell/v2"
@@ -8,6 +10,7 @@ import (
 )
 
 var SearchBox *tview.InputField
+var prevSearchText string
 
 func init() {
 	newSearchBox()
@@ -26,6 +29,17 @@ func newSearchBox() *tview.InputField {
 
 func init() {
 	SearchBox.SetChangedFunc(func(text string) {
+		trimmed := strings.TrimSpace(text)
+		if strings.HasPrefix(trimmed, ":") {
+			prevSearchText = trimmed
+			return
+		}
+		if strings.HasPrefix(prevSearchText, ":") && trimmed == "" {
+			prevSearchText = ""
+			return
+		}
+		prevSearchText = trimmed
+
 		Clear()
 		for _, host := range sshUtils.SearchHostname(sshUtils.AllHosts, text) {
 			h := host

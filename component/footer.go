@@ -53,6 +53,14 @@ func ShowSearchFooterHints() {
 	Footer.SetText("Filter: [yellow]alias[-] | [yellow]IP[-] | [yellow]user[-] | [yellow]#tag[-] | [yellow]!exclude[-] | [yellow]Esc[-] Cancel")
 }
 
+// SetFooterMessage displays a custom message in the footer.
+func SetFooterMessage(msg string) {
+	if Footer == nil {
+		return
+	}
+	Footer.SetText(msg)
+}
+
 // RestoreNormalFooter restores normal keybinding hints.
 func RestoreNormalFooter() {
 	UpdateFooter(GetSelectedCount())

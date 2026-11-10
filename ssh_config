@@ -1,0 +1,130 @@
+# ==============================================================================
+# Sample SSH Config for Testing ssht features & ':' Command Palette
+#
+# Run with:
+#   ./ssht -c ./ssh_config
+#   or without pings:
+#   ./ssht --config ./ssh_config --no-ping
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Hosts for testing ':proxy' and ':bastion'
+# ------------------------------------------------------------------------------
+Host prod-db-via-bastion
+    HostName 10.10.1.50
+    User postgres
+    Port 22
+    Tag prod database
+    ProxyJump bastion-gateway.internal
+
+Host secure-backend-proxy
+    HostName 10.20.0.12
+    User deploy
+    ProxyCommand ssh -W %h:%p bastion-gateway.internal
+    Tag prod backend
+
+Host bastion-gateway.internal
+    HostName 198.51.100.1
+    User admin
+    Port 2222
+    Tag infra gateway
+
+# ------------------------------------------------------------------------------
+# 2. Hosts for testing ':fwd', ':forward', and ':tunnel'
+# ------------------------------------------------------------------------------
+Host postgres-tunnel-local
+    HostName 10.10.1.50
+    User postgres
+    LocalForward 5432 127.0.0.1:5432
+    Tag database tunnel
+
+Host redis-tunnel-local
+    HostName 10.10.2.10
+    User redis
+    LocalForward 6379 127.0.0.1:6379
+    Tag cache tunnel
+
+Host socks5-dynamic-proxy
+    HostName 203.0.113.88
+    User root
+    DynamicForward 1080
+    Tag network proxy
+
+# ------------------------------------------------------------------------------
+# 3. Hosts for testing ':cmd' (RemoteCommand)
+# ------------------------------------------------------------------------------
+Host monitor-syslog-stream
+    HostName 192.168.1.105
+    User ubuntu
+    RemoteCommand journalctl -f -u nginx
+    RequestTTY yes
+    Tag infra monitor
+
+Host cluster-htop-runner
+    HostName 192.168.1.106
+    User ubuntu
+    RemoteCommand htop
+    RequestTTY yes
+    Tag monitor
+
+# ------------------------------------------------------------------------------
+# 4. Hosts for testing ':badkeys' and ':keys'
+# ------------------------------------------------------------------------------
+Host host-with-missing-key
+    HostName 192.168.1.200
+    User ubuntu
+    IdentityFile ~/.ssh/non_existent_dummy_key_12345.id_ed25519
+    Tag test broken
+
+Host host-with-explicit-key
+    HostName 192.168.1.201
+    User deploy
+    IdentityFile ~/.ssh/id_rsa
+    Tag secure auth
+
+# ------------------------------------------------------------------------------
+# 5. Hosts for testing ':tag <name>' (e.g. :tag prod, :tag k8s, :tag web)
+# ------------------------------------------------------------------------------
+Host prod-web-node-01
+    HostName 172.31.10.1
+    User ubuntu
+    Tag prod web frontend
+
+Host prod-web-node-02
+    HostName 172.31.10.2
+    User ubuntu
+    Tag prod web frontend
+
+Host prod-api-gateway
+    HostName 172.31.20.10
+    User ubuntu
+    Tag prod api backend
+
+Host staging-k8s-master
+    HostName 10.0.5.10
+    User root
+    Tag staging k8s control-plane
+
+Host staging-k8s-worker-01
+    HostName 10.0.5.11
+    User root
+    Tag staging k8s worker
+
+Host staging-k8s-worker-02
+    HostName 10.0.5.12
+    User root
+    Tag staging k8s worker
+
+Host dev-testing-sandbox
+    HostName 127.0.0.1
+    Port 2222
+    User developer
+    Tag dev sandbox
+
+# ------------------------------------------------------------------------------
+# 6. Standard direct host (no special flags)
+# ------------------------------------------------------------------------------
+Host ordinary-direct-host
+    HostName 192.168.1.99
+    User admin
+    Tag standard

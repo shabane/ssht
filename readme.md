@@ -84,6 +84,29 @@ This script will automatically detect your OS/architecture, download the correct
 |     Esc      | Reset search / close modal / back                |
 |    CTRL+C    | Quit                                             |
 
+### Command Palette (`:` Commands)
+Press `:` from the host list to enter command mode:
+
+| Command | Action |
+|:-------:|:-------|
+| `:q`, `:quit` | Exit `ssht` cleanly |
+| `:r`, `:reload` | Re-read `~/.ssh/config` from disk and auto-refresh hosts without restarting |
+| `:h`, `:help` | Open guide and keybindings menu |
+| `:ping` | Trigger an immediate concurrent reachability ping |
+| `:select all` | Select all visible hosts (`[x]`) for batch tmux actions |
+| `:select <query>` | Select visible hosts matching query (e.g. `:select prod`) |
+| `:clear` | Clear all selections |
+| `:sort name` | Sort visible hosts alphabetically by alias |
+| `:sort ip` | Sort visible hosts by resolved IP address |
+| `:sort status` | Sort hosts by status (selected & reachable first, unreachable last) |
+| `:proxy` | Filter view to hosts using `ProxyJump` or `ProxyCommand` |
+| `:fwd`, `:tunnel` | Filter view to hosts with `LocalForward` or `DynamicForward` |
+| `:badkeys` | Filter view to hosts with missing or insecure identity files |
+| `:keys` | Filter view to hosts with an explicit `IdentityFile` |
+| `:cmd` | Filter view to hosts with a configured `RemoteCommand` |
+| `:tag <name>` | Filter view to hosts matching specified tag |
+| `:all` | Reset all view filters and restore all hosts |
+
 ### Demos
 
 #### 1. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct / `CTRL+T` for Remote Tmux)

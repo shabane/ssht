@@ -104,3 +104,7 @@
 - [x] **رفع مشکل جایگزینی باینری در اسکریپت نصب (Installer Bugfix)**
   - *توضیح:* استفاده از فایل موقت اتمیک (`mktemp`) و دستور `mv -f` در `install.sh` برای جایگزینی موفق و بدون خطای `Text file busy` هنگام نصب مجدد یا باز بودن برنامه.
   - *محل اعمال:* `install.sh`
+
+- [x] **موتور خط فرمان یکپارچه و پالت دستورات برای حالت `:` (Command Engine - ADR 0006)**
+  - *توضیح:* تبدیل کلید `:` از یک فیلتر ساده به یک پالت دستورات کامل با دستورات کنترلی (`:q`, `:reload`, `:help`)، عملیات دسته‌ای (`:select all`, `:select <query>`, `:clear`)، مرتب‌سازی و شبکه (`:ping`, `:sort name`, `:sort ip`, `:sort status`)، پیام وضعیت در صورت نیافتن نتیجه (عدم نمایش صفحه خالی) و اخطار برای دستورات نامعتبر.
+  - *محل اعمال:* `component/command.go`، `component/listBox.go`، `component/searchBox.go`، `component/footer.go` و `main.go`

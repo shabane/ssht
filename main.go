@@ -231,8 +231,15 @@ func main() {
 					return nil
 				}
 			}
-			if event.Key() == tcell.KeyDown || event.Key() == tcell.KeyUp || event.Key() == tcell.KeyPgUp || event.Key() == tcell.KeyPgDn ||
-				keyName == "Down" || keyName == "Up" || keyName == "PgUp" || keyName == "PgDn" || keyName == "Home" || keyName == "End" {
+			if event.Key() == tcell.KeyDown || keyName == "Down" {
+				tviewUtils.App.SetFocus(component.ListBox)
+				if component.ListBox.GetItemCount() > 0 {
+					component.ListBox.SetCurrentItem(0)
+				}
+				return nil
+			}
+			if event.Key() == tcell.KeyUp || event.Key() == tcell.KeyPgUp || event.Key() == tcell.KeyPgDn ||
+				keyName == "Up" || keyName == "PgUp" || keyName == "PgDn" || keyName == "Home" || keyName == "End" {
 				tviewUtils.App.SetFocus(component.ListBox)
 				return event
 			}

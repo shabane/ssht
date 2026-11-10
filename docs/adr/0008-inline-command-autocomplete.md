@@ -43,3 +43,4 @@ Implement an `AutocompleteInputField` in `component/searchBox.go` that renders i
 - Drastically reduces typing effort and cognitive load for remembering commands.
 - Dynamically integrates with user's SSH tags for tag completions.
 - Preserves full backward compatibility with all existing search behaviors.
+

@@ -112,3 +112,7 @@
 - [x] **ناوبری جهتی به سبک ویم: HJKL و G/g (Vim Navigation - ADR 0007)**
   - *توضیح:* پشتیبانی بومی از کلیدهای ناوبری ویم (`j`/`k` برای حرکت بالا/پایین، `h`/`l` برای اسکرول افقی چپ/راست، `g`/`G` برای پرش سریع به ابتدا و انتهای لیست) در لیست هاست‌ها و امکان اسکرول مودال با `j`/`k` و بستن مودال با `h`/`H` بدون نیاز به دست بردن به کلیدهای جهت‌نما.
   - *محل اعمال:* `component/listBox.go`، `component/describeModal.go` و `main.go`
+
+- [x] **تکمیل خودکار درون‌خطی و متن شبح برای دستورات حالت `:` (Inline Command Autocomplete & Ghost-Text - ADR 0008)**
+  - *توضیح:* پیاده‌سازی `AutocompleteInputField` با نمایش متن شبح درون‌خطی (Inline Ghost-Text) به رنگ فیروزه‌ای (`#38bdf8`) دقیقاً مشابه k9s و fish، تکمیل خودکار و چرخش میان گزینه‌ها با کلید `Tab`، پذیرش پیشنهاد با `Right Arrow`، و اتصال داینامیک به تگ‌های تعریف‌شده در `HostsMeta` برای دستورات `:tag` و `:select`.
+  - *محل اعمال:* `component/searchBox.go`، `component/autocomplete_test.go` و `main.go`

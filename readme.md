@@ -22,6 +22,7 @@ optionally multi-select specific servers with `Space`, and connect to one or bat
 in a tmux session (or connect directly without tmux).
 
 ### Features
+- **Inline Command Autocomplete & Ghost-Text Placeholder:** inline cyan/blue ghost text suggestions in `:` mode (k9s-style), with `Tab` cycling through commands/tags and `Right Arrow` to accept
 - **Vim-Style Directional Navigation:** home-row navigation (`j`/`k` Up/Down, `h`/`l` Left/Right, `g`/`G` Top/Bottom of list, and `j`/`k`/`h` in modals)
 - **K9s-Style Navigation:** single-key actions when focused on list (`d` describe, `e` edit in editor, `s` shell, `w` direct, `c` remote command, `/` search, `:` command mode)
 - **Host Inspection Modal (`d`):** inspect all `ssh_config` directives (IdentityFile validation, ProxyJump, LocalForward, RemoteCommand, Tags, and file location)
@@ -72,7 +73,8 @@ This script will automatically detect your OS/architecture, download the correct
 |    `:`       | Command prompt mode (`:tag`, `:proxy`, `:fwd`...) |
 |    `/`       | Quick search / filter mode (`#tag`, `tag:...`)   |
 |    Space     | Toggle selection of host ([x])                   |
-|     Tab      | Switch focus between Search and List             |
+|     Tab      | Switch focus / Cycle `:` command completions      |
+|    Right     | Accept inline ghost-text suggestion in `:` mode   |
 | `j` / `k` (↑/↓) | Navigate host list Up / Down (or scroll modal)  |
 | `h` / `l` (←/→) | Scroll host list Left / Right (`h` closes modal) |
 |  `g` / `G`   | Jump to Top / Bottom of host list                |
@@ -88,7 +90,7 @@ This script will automatically detect your OS/architecture, download the correct
 |    CTRL+C    | Quit                                             |
 
 ### Command Palette (`:` Commands)
-Press `:` from the host list to enter command mode:
+Press `:` from the host list to enter command mode. Typing displays an inline ghost-text placeholder (cyan `#38bdf8`) with suggestions. Press `Tab` to cycle through matches or `Right Arrow` to accept:
 
 | Command | Action |
 |:-------:|:-------|

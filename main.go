@@ -189,14 +189,8 @@ func main() {
 			if isListBoxFocused {
 				showSearchBox("")
 				component.ShowSearchFooterHints()
-			} else {
-				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" {
-					hideSearchBox()
-				} else {
-					tviewUtils.App.SetFocus(component.ListBox)
-				}
+				return nil
 			}
-			return nil
 		} else if event.Key() == tcell.KeyEscape || keyName == "Esc" || keyName == "Escape" {
 			hideSearchBox()
 			component.RefreshList()
@@ -204,6 +198,24 @@ func main() {
 		}
 
 		if isSearchBoxFocused {
+			if event.Key() == tcell.KeyTab || keyName == "Tab" {
+				if strings.HasPrefix(component.SearchBox.GetText(), ":") {
+					if component.SearchBox.AutocompleteNext() {
+						return nil
+					}
+				}
+				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" {
+					hideSearchBox()
+				} else {
+					tviewUtils.App.SetFocus(component.ListBox)
+				}
+				return nil
+			}
+			if event.Key() == tcell.KeyRight || keyName == "Right" {
+				if component.SearchBox.AcceptGhost() {
+					return nil
+				}
+			}
 			if event.Key() == tcell.KeyDown || event.Key() == tcell.KeyUp || event.Key() == tcell.KeyPgUp || event.Key() == tcell.KeyPgDn ||
 				keyName == "Down" || keyName == "Up" || keyName == "PgUp" || keyName == "PgDn" || keyName == "Home" || keyName == "End" {
 				tviewUtils.App.SetFocus(component.ListBox)

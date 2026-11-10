@@ -30,4 +30,25 @@ func TestUpdateFooter_K9sShortcuts(t *testing.T) {
 			t.Errorf("expected footer with selection to contain %q, got: %q", sc, textWithSelection)
 		}
 	}
+
+	// Test command mode hints
+	ShowCommandFooterHints()
+	cmdText := Footer.GetText(true)
+	if !strings.Contains(cmdText, ":tag <name>") || !strings.Contains(cmdText, ":proxy") || !strings.Contains(cmdText, ":badkeys") {
+		t.Errorf("expected command footer hints to contain directives, got: %q", cmdText)
+	}
+
+	// Test search mode hints
+	ShowSearchFooterHints()
+	searchText := Footer.GetText(true)
+	if !strings.Contains(searchText, "Filter:") || !strings.Contains(searchText, "#tag") {
+		t.Errorf("expected search footer hints, got: %q", searchText)
+	}
+
+	// Test restore
+	RestoreNormalFooter()
+	restoredText := Footer.GetText(true)
+	if !strings.Contains(restoredText, "<s> Shell") {
+		t.Errorf("expected restored footer to contain '<s> Shell', got: %q", restoredText)
+	}
 }

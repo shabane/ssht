@@ -220,3 +220,77 @@ func TestRefreshList(t *testing.T) {
 		t.Fatalf("expected [alpha-server], got %v", visible)
 	}
 }
+
+func TestListBox_VimNavigationInputCapture(t *testing.T) {
+	Clear()
+	capture := ListBox.GetInputCapture()
+	if capture == nil {
+		t.Fatal("expected input capture on ListBox")
+	}
+
+	tests := []struct {
+		name    string
+		rune    rune
+		wantKey tcell.Key
+	}{
+		{"'j' -> KeyDown", 'j', tcell.KeyDown},
+		{"'k' -> KeyUp", 'k', tcell.KeyUp},
+		{"'h' -> KeyLeft", 'h', tcell.KeyLeft},
+		{"'l' -> KeyRight", 'l', tcell.KeyRight},
+		{"'g' -> KeyHome", 'g', tcell.KeyHome},
+		{"'G' -> KeyEnd", 'G', tcell.KeyEnd},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ev := tcell.NewEventKey(tcell.KeyRune, tt.rune, tcell.ModNone)
+			res := capture(ev)
+			if res == nil {
+				t.Fatalf("expected event to be returned, got nil")
+			}
+			if res.Key() != tt.wantKey {
+				t.Errorf("expected Key() == %v, got %v", tt.wantKey, res.Key())
+			}
+		})
+	}
+
+	// Unrelated key should be returned unchanged
+	evZ := tcell.NewEventKey(tcell.KeyRune, 'z', tcell.ModNone)
+	resZ := capture(evZ)
+	if resZ != evZ {
+		t.Errorf("expected unrelated key to be returned unchanged, got %v", resZ)
+	}
+}
+
+func TestShowHelpGuide_IncludesVimNavigation(t *testing.T) {
+	ShowHelpGuide()
+	count := ListBox.GetItemCount()
+	if count < 10 {
+		t.Fatalf("expected at least 10 items in guide, got %d", count)
+	}
+
+	var foundJK, foundHL, foundG bool
+	for i := 0; i < count; i++ {
+		mainText, secText := ListBox.GetItemText(i)
+		combined := mainText + " " + secText
+		if strings.Contains(combined, "j / k") || strings.Contains(combined, "j k") {
+			foundJK = true
+		}
+		if strings.Contains(combined, "h / l") || strings.Contains(combined, "h l") {
+			foundHL = true
+		}
+		if strings.Contains(combined, "g / G") {
+			foundG = true
+		}
+	}
+
+	if !foundJK {
+		t.Errorf("expected guide to list j / k navigation")
+	}
+	if !foundHL {
+		t.Errorf("expected guide to list h / l navigation")
+	}
+	if !foundG {
+		t.Errorf("expected guide to list g / G navigation")
+	}
+}

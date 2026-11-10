@@ -132,8 +132,8 @@ func NewDescribeModal(meta sshUtils.HostMetadata, onConnect func(), onEdit func(
 	inputCapture := func(event *tcell.EventKey) *tcell.EventKey {
 		keyName := event.Name()
 		if event.Key() == tcell.KeyEscape || keyName == "Esc" || keyName == "Escape" ||
-			(event.Key() == tcell.KeyRune && (event.Rune() == 'q' || event.Rune() == 'Q')) ||
-			keyName == "Rune[q]" || keyName == "Rune[Q]" {
+			(event.Key() == tcell.KeyRune && (event.Rune() == 'q' || event.Rune() == 'Q' || event.Rune() == 'h' || event.Rune() == 'H')) ||
+			keyName == "Rune[q]" || keyName == "Rune[Q]" || keyName == "Rune[h]" || keyName == "Rune[H]" {
 			if onClose != nil {
 				onClose()
 			}
@@ -160,6 +160,12 @@ func NewDescribeModal(meta sshUtils.HostMetadata, onConnect func(), onEdit func(
 				onRunCmd()
 			}
 			return nil
+		}
+		if (event.Key() == tcell.KeyRune && event.Rune() == 'j') || keyName == "Rune[j]" {
+			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+		}
+		if (event.Key() == tcell.KeyRune && event.Rune() == 'k') || keyName == "Rune[k]" {
+			return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
 		}
 		return event
 	}

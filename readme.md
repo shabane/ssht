@@ -22,6 +22,7 @@ optionally multi-select specific servers with `Space`, and connect to one or bat
 in a tmux session (or connect directly without tmux).
 
 ### Features
+- **Vim-Style Directional Navigation:** home-row navigation (`j`/`k` Up/Down, `h`/`l` Left/Right, `g`/`G` Top/Bottom of list, and `j`/`k`/`h` in modals)
 - **K9s-Style Navigation:** single-key actions when focused on list (`d` describe, `e` edit in editor, `s` shell, `w` direct, `c` remote command, `/` search, `:` command mode)
 - **Host Inspection Modal (`d`):** inspect all `ssh_config` directives (IdentityFile validation, ProxyJump, LocalForward, RemoteCommand, Tags, and file location)
 - **In-Place Config Editing (`e`):** jump straight to the host's definition line in `$EDITOR` (vim, nano, code) and auto-reload changes upon exit
@@ -72,7 +73,9 @@ This script will automatically detect your OS/architecture, download the correct
 |    `/`       | Quick search / filter mode (`#tag`, `tag:...`)   |
 |    Space     | Toggle selection of host ([x])                   |
 |     Tab      | Switch focus between Search and List             |
-|    ↑ / ↓     | Navigate host list (or `j` / `k` when focused)   |
+| `j` / `k` (↑/↓) | Navigate host list Up / Down (or scroll modal)  |
+| `h` / `l` (←/→) | Scroll host list Left / Right (`h` closes modal) |
+|  `g` / `G`   | Jump to Top / Bottom of host list                |
 |   PgUp/Dn    | Page up/down in host list                        |
 |    CTRL+S    | Sort hosts (Selected & Reachable first)          |
 |    CTRL+W    | Connect Directly to Selected Host (No Tmux)      |

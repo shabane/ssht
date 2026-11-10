@@ -213,7 +213,9 @@ func TestNewDescribeModal_InputCapture(t *testing.T) {
 		{"E", tcell.NewEventKey(tcell.KeyRune, 'E', 0), 3, 3, 2, 0, true},
 		{"c", tcell.NewEventKey(tcell.KeyRune, 'c', 0), 3, 3, 2, 1, true},
 		{"C", tcell.NewEventKey(tcell.KeyRune, 'C', 0), 3, 3, 2, 2, true},
-		{"unhandled 'x'", tcell.NewEventKey(tcell.KeyRune, 'x', 0), 3, 3, 2, 2, false},
+		{"h", tcell.NewEventKey(tcell.KeyRune, 'h', 0), 4, 3, 2, 2, true},
+		{"H", tcell.NewEventKey(tcell.KeyRune, 'H', 0), 5, 3, 2, 2, true},
+		{"unhandled 'x'", tcell.NewEventKey(tcell.KeyRune, 'x', 0), 5, 3, 2, 2, false},
 	}
 
 	for _, tt := range tests {
@@ -284,5 +286,59 @@ func TestNewDescribeModal_TitleAndSource(t *testing.T) {
 	}
 	if strings.Contains(content, "/etc/ssh/ssh_config:") {
 		t.Errorf("did not expect line number colon when SourceLine is 0, got:\n%s", content)
+	}
+}
+
+func TestNewDescribeModal_VimScrollAndDismiss(t *testing.T) {
+	meta := sshUtils.HostMetadata{
+		Alias: "scroll-test-host",
+	}
+
+	var closeCalled bool
+	onClose := func() { closeCalled = true }
+
+	primitive := NewDescribeModal(meta, nil, nil, nil, onClose)
+	flex, ok := primitive.(*tview.Flex)
+	if !ok {
+		t.Fatalf("expected *tview.Flex, got %T", primitive)
+	}
+	capture := flex.GetInputCapture()
+	if capture == nil {
+		t.Fatal("expected input capture on modal flex")
+	}
+
+	// 'j' should translate to KeyDown (scroll down)
+	evJ := tcell.NewEventKey(tcell.KeyRune, 'j', 0)
+	resJ := capture(evJ)
+	if resJ == nil || resJ.Key() != tcell.KeyDown {
+		t.Errorf("expected 'j' to return KeyDown event, got %v", resJ)
+	}
+
+	// 'k' should translate to KeyUp (scroll up)
+	evK := tcell.NewEventKey(tcell.KeyRune, 'k', 0)
+	resK := capture(evK)
+	if resK == nil || resK.Key() != tcell.KeyUp {
+		t.Errorf("expected 'k' to return KeyUp event, got %v", resK)
+	}
+
+	// 'h' should call onClose and return nil
+	evH := tcell.NewEventKey(tcell.KeyRune, 'h', 0)
+	resH := capture(evH)
+	if resH != nil {
+		t.Errorf("expected 'h' to be consumed (return nil), got %v", resH)
+	}
+	if !closeCalled {
+		t.Errorf("expected onClose to be called on 'h'")
+	}
+
+	// 'H' should also call onClose and return nil
+	closeCalled = false
+	evUpperH := tcell.NewEventKey(tcell.KeyRune, 'H', 0)
+	resUpperH := capture(evUpperH)
+	if resUpperH != nil {
+		t.Errorf("expected 'H' to be consumed (return nil), got %v", resUpperH)
+	}
+	if !closeCalled {
+		t.Errorf("expected onClose to be called on 'H'")
 	}
 }

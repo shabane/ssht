@@ -243,6 +243,40 @@ func main() {
 			return nil
 		}
 
+		if isListBoxFocused {
+			if event.Key() == tcell.KeyRune {
+				switch event.Rune() {
+				case 'j':
+					return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+				case 'k':
+					return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+				case 'h':
+					return tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModNone)
+				case 'l':
+					return tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone)
+				case 'g':
+					return tcell.NewEventKey(tcell.KeyHome, 0, tcell.ModNone)
+				case 'G':
+					return tcell.NewEventKey(tcell.KeyEnd, 0, tcell.ModNone)
+				}
+			} else {
+				switch keyName {
+				case "Rune[j]", "j":
+					return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+				case "Rune[k]", "k":
+					return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+				case "Rune[h]", "h":
+					return tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModNone)
+				case "Rune[l]", "l":
+					return tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone)
+				case "Rune[g]", "g":
+					return tcell.NewEventKey(tcell.KeyHome, 0, tcell.ModNone)
+				case "Rune[G]", "G":
+					return tcell.NewEventKey(tcell.KeyEnd, 0, tcell.ModNone)
+				}
+			}
+		}
+
 		isRuneKey := func(r rune) bool {
 			if event.Modifiers()&^tcell.ModShift != 0 {
 				return false

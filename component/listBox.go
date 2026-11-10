@@ -59,6 +59,22 @@ func newListBox() *tview.List {
 				ToggleSelect(index)
 				return nil
 			}
+			if event.Key() == tcell.KeyRune {
+				switch event.Rune() {
+				case 'j':
+					return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+				case 'k':
+					return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
+				case 'h':
+					return tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModNone)
+				case 'l':
+					return tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone)
+				case 'g':
+					return tcell.NewEventKey(tcell.KeyHome, 0, tcell.ModNone)
+				case 'G':
+					return tcell.NewEventKey(tcell.KeyEnd, 0, tcell.ModNone)
+				}
+			}
 			return event
 		})
 		ListBox = listBox
@@ -404,6 +420,9 @@ func ShowHelpGuide() {
 	defer mu.Unlock()
 	ListBox.Clear()
 	visibleHosts = nil
+	ListBox.AddItem("j / k", "Up/Down The list", 0, nil)
+	ListBox.AddItem("h / l", "Left/Right The list", 0, nil)
+	ListBox.AddItem("g / G", "Top/Bottom of list", 0, nil)
 	ListBox.AddItem("↑↓", "Up/Down The list", 0, nil)
 	ListBox.AddItem("Tab", "Switch Focus between Search and List", 0, nil)
 	ListBox.AddItem("Space", fmt.Sprintf("Toggle Selection (%s) on List", tview.Escape("[x]")), 0, nil)

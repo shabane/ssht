@@ -30,3 +30,4 @@ In `component/describeModal.go`:
 - Ergonomic and natural navigation for Vim, k9s, and terminal users.
 - Home row navigation without needing arrow keys.
 - Preserves all existing arrow key and shortcut behaviors.
+

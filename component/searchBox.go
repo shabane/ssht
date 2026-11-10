@@ -15,7 +15,7 @@ var baseCommands = []string{
 	":badkeys", ":keys", ":cmd", ":reload", ":quit",
 	":help", ":ping", ":select all", ":select ", ":clear",
 	":deselect", ":sort name", ":sort ip", ":sort status",
-	":all", ":tag ",
+	":all", ":tag ", ":run ", ":exec ",
 }
 
 // AutocompleteInputField embeds tview.InputField with inline ghost-text
@@ -213,11 +213,11 @@ func init() {
 		SearchBox.UpdateSuggestions(text)
 
 		trimmed := strings.TrimSpace(text)
-		if strings.HasPrefix(trimmed, ":") {
+		if strings.HasPrefix(trimmed, ":") || strings.HasPrefix(trimmed, "<") || strings.HasPrefix(trimmed, ">") {
 			prevSearchText = trimmed
 			return
 		}
-		if strings.HasPrefix(prevSearchText, ":") && trimmed == "" {
+		if (strings.HasPrefix(prevSearchText, ":") || strings.HasPrefix(prevSearchText, "<") || strings.HasPrefix(prevSearchText, ">")) && trimmed == "" {
 			prevSearchText = ""
 			return
 		}

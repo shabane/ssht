@@ -50,3 +50,27 @@ func TestBuildRemoteTmuxArgs(t *testing.T) {
 		t.Errorf("expected %v, got %v", expectedWithCustom, argsWithCustom)
 	}
 }
+
+func TestBuildSSHArgsWithCommand(t *testing.T) {
+	sshUtils.CustomConfigPath = ""
+	argsNoCmd := buildSSHArgsWithCommand("myhost", "")
+	expectedNoCmd := []string{"myhost"}
+	if !reflect.DeepEqual(argsNoCmd, expectedNoCmd) {
+		t.Errorf("expected %v, got %v", expectedNoCmd, argsNoCmd)
+	}
+
+	argsWithCmd := buildSSHArgsWithCommand("myhost", "htop")
+	expectedWithCmd := []string{"-t", "myhost", "htop"}
+	if !reflect.DeepEqual(argsWithCmd, expectedWithCmd) {
+		t.Errorf("expected %v, got %v", expectedWithCmd, argsWithCmd)
+	}
+
+	sshUtils.CustomConfigPath = "/path/to/custom_config"
+	defer func() { sshUtils.CustomConfigPath = "" }()
+
+	argsWithBoth := buildSSHArgsWithCommand("myhost", "df -h")
+	expectedWithBoth := []string{"-t", "-F", "/path/to/custom_config", "myhost", "df -h"}
+	if !reflect.DeepEqual(argsWithBoth, expectedWithBoth) {
+		t.Errorf("expected %v, got %v", expectedWithBoth, argsWithBoth)
+	}
+}

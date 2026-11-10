@@ -145,6 +145,21 @@ func main() {
 			return hosts
 		}
 
+		runRemoteCommand := func(cmdStr string) {
+			targets := component.GetSelectedHosts()
+			if len(targets) == 0 {
+				index := component.ListBox.GetCurrentItem()
+				if host, ok := component.GetHost(index); ok {
+					targets = []string{host}
+				}
+			}
+			if len(targets) == 0 {
+				component.SetFooterMessage("[red]No hosts available to run command[-]")
+				return
+			}
+			tmuxUtils.OpenSelectedInTmuxWithCommand(tmuxUtils.TailedPane, targets, cmdStr)
+		}
+
 		isCtrl := func(key tcell.Key, name string) bool {
 			return event.Key() == key || keyName == name || keyName == strings.Replace(name, "+", "-", 1)
 		}
@@ -204,7 +219,7 @@ func main() {
 						return nil
 					}
 				}
-				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" {
+				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" || strings.HasPrefix(component.SearchBox.GetText(), "<") || strings.HasPrefix(component.SearchBox.GetText(), ">") {
 					hideSearchBox()
 				} else {
 					tviewUtils.App.SetFocus(component.ListBox)
@@ -223,8 +238,16 @@ func main() {
 			}
 			if event.Key() == tcell.KeyEnter || keyName == "Enter" {
 				text := strings.TrimSpace(component.SearchBox.GetText())
-				if text == "" || text == ":" {
+				if text == "" || text == ":" || text == "<" || text == ">" {
 					hideSearchBox()
+					return nil
+				}
+				if strings.HasPrefix(text, "<") || strings.HasPrefix(text, ">") {
+					cmdStr := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(text, "<"), ">"))
+					hideSearchBox()
+					if cmdStr != "" {
+						runRemoteCommand(cmdStr)
+					}
 					return nil
 				}
 				if strings.HasPrefix(text, ":") {
@@ -233,6 +256,11 @@ func main() {
 						tviewUtils.App.SetFocus(component.ListBox)
 						if res.Message != "" {
 							component.SetFooterMessage(res.Message)
+						}
+					} else if res.Action == "exec" {
+						hideSearchBox()
+						if res.Target != "" {
+							runRemoteCommand(res.Target)
 						}
 					} else {
 						// Action / control command (:q, :reload, :select, :clear, :ping, :sort) or unknown
@@ -376,6 +404,17 @@ func main() {
 					meta := sshUtils.GetHostMeta(host)
 					if meta.RemoteCommand != "" {
 						tmuxUtils.DirectConnect(host)
+					} else {
+						selected := component.GetSelectedHosts()
+						targetCount := len(selected)
+						targetName := host
+						if targetCount > 0 {
+							targetName = ""
+						} else {
+							targetCount = 1
+						}
+						showSearchBox("< ")
+						component.ShowRemoteCommandFooterHints(targetCount, targetName)
 					}
 				}
 			}
@@ -393,6 +432,24 @@ func main() {
 		} else if isRuneKey(':') {
 			showSearchBox(":")
 			component.ShowCommandFooterHints()
+			return nil
+		} else if isRuneKey('<') || isRuneKey('>') {
+			selected := component.GetSelectedHosts()
+			targetCount := len(selected)
+			targetName := ""
+			if targetCount == 0 {
+				index := component.ListBox.GetCurrentItem()
+				if host, ok := component.GetHost(index); ok {
+					targetCount = 1
+					targetName = host
+				}
+			}
+			if targetCount == 0 {
+				component.SetFooterMessage("[yellow]No hosts available to run command[-]")
+				return nil
+			}
+			showSearchBox("< ")
+			component.ShowRemoteCommandFooterHints(targetCount, targetName)
 			return nil
 		}
 

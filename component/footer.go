@@ -34,7 +34,21 @@ func UpdateFooter(selectedCount int) {
 	if selectedCount > 0 {
 		prefix = fmt.Sprintf("[#42f5aa](%d selected)[-] | ", selectedCount)
 	}
-	Footer.SetText(prefix + "[yellow]<s>[-] Shell | [yellow]<d>[-] Describe | [yellow]<e>[-] Edit | [yellow]<w>[-] Direct | [yellow]<a>[-] Tiled | [yellow]<o>[-] Sync | [yellow]</>[-] Search | [yellow]<:>[-] Cmd")
+	Footer.SetText(prefix + "[yellow]<s>[-] Shell | [yellow]<d>[-] Describe | [yellow]<e>[-] Edit | [yellow]<w>[-] Direct | [yellow]<a>[-] Tiled | [yellow]<o>[-] Sync | [yellow]</>[-] Search | [yellow]<:>[-] Cmd | [yellow]<<>[-] Run")
+}
+
+// ShowRemoteCommandFooterHints displays cheat-sheet hints for remote command execution.
+func ShowRemoteCommandFooterHints(targetCount int, singleTargetName string) {
+	if Footer == nil {
+		return
+	}
+	if targetCount > 1 {
+		Footer.SetText(fmt.Sprintf("Run command on [#42f5aa]%d selected hosts[-] in tmux: [yellow]Enter[-] Execute | [yellow]Esc[-] Cancel", targetCount))
+	} else if singleTargetName != "" {
+		Footer.SetText(fmt.Sprintf("Run command on [#42f5aa]%s[-] in tmux: [yellow]Enter[-] Execute | [yellow]Esc[-] Cancel", singleTargetName))
+	} else {
+		Footer.SetText("Run command on selected hosts in tmux: [yellow]Enter[-] Execute | [yellow]Esc[-] Cancel")
+	}
 }
 
 // ShowCommandFooterHints displays cheat-sheet hints for colon commands.

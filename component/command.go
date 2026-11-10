@@ -13,6 +13,7 @@ import (
 // CommandResult represents the outcome of executing a command in colon (:) mode.
 type CommandResult struct {
 	Action  string
+	Target  string
 	Message string
 	Handled bool
 }
@@ -110,6 +111,22 @@ func ExecuteCommand(raw string, configPath string) CommandResult {
 		return CommandResult{
 			Action:  "ping",
 			Message: "[#42f5aa]Triggered reachability ping check[-]",
+			Handled: true,
+		}
+
+	case "run", "exec":
+		if len(fields) < 2 {
+			return CommandResult{
+				Action:  "exec",
+				Message: "[yellow]Usage: :run <command> (or :exec <command>)[-]",
+				Handled: false,
+			}
+		}
+		cmdToRun := strings.TrimSpace(clean[len(fields[0]):])
+		return CommandResult{
+			Action:  "exec",
+			Target:  cmdToRun,
+			Message: fmt.Sprintf("Running %q on selected hosts...", cmdToRun),
 			Handled: true,
 		}
 

@@ -24,38 +24,56 @@ func getCurrentTmuxSession() string {
 	return strings.TrimSpace(string(out))
 }
 
-func buildSSHArgs(hostname string) []string {
+func buildSSHArgsWithCommand(hostname string, remoteCmd string) []string {
 	var args []string
+	if remoteCmd != "" {
+		args = append(args, "-t")
+	}
 	if sshUtils.CustomConfigPath != "" {
 		args = append(args, "-F", sshUtils.CustomConfigPath)
 	}
 	args = append(args, hostname)
+	if remoteCmd != "" {
+		args = append(args, remoteCmd)
+	}
 	return args
+}
+
+func buildSSHArgs(hostname string) []string {
+	return buildSSHArgsWithCommand(hostname, "")
 }
 
 func generateTmuxSessionId() string {
 	return "ssht-" + strconv.Itoa(int(time.Now().Unix()))
 }
 
-func SessionCreator(hostname string) {
+func SessionCreatorWithCommand(hostname string, remoteCmd string) {
 	if tmuxId == "" {
 		tmuxId = generateTmuxSessionId()
 		if err := os.Setenv("TMUX_ID", tmuxId); err != nil {
 			log.Fatal(err)
 		}
 
-		sshArgs := append([]string{"ssh"}, buildSSHArgs(hostname)...)
+		sshArgs := append([]string{"ssh"}, buildSSHArgsWithCommand(hostname, remoteCmd)...)
 		tmuxArgs := append([]string{"new-session", "-d", "-s", tmuxId}, sshArgs...)
 		initCmd := exec.Command("tmux", tmuxArgs...)
 		if err := initCmd.Run(); err != nil {
 			fmt.Printf("Error creating session: %v\n", err)
 			return
 		}
+
+		if remoteCmd != "" {
+			_ = exec.Command("tmux", "set-option", "-t", tmuxId, "remain-on-exit", "on").Run()
+		}
 	}
 }
 
-func runSSH(hostname string) {
-	cmd := exec.Command("ssh", buildSSHArgs(hostname)...)
+func SessionCreator(hostname string) {
+	SessionCreatorWithCommand(hostname, "")
+}
+
+func runSSHWithCommand(hostname string, remoteCmd string) {
+	cmd := exec.Command("ssh", buildSSHArgsWithCommand(hostname, remoteCmd)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -65,6 +83,10 @@ func runSSH(hostname string) {
 		var discard string
 		fmt.Scanln(&discard)
 	}
+}
+
+func runSSH(hostname string) {
+	runSSHWithCommand(hostname, "")
 }
 
 func buildRemoteTmuxArgs(hostname string, sessionName string) []string {
@@ -139,7 +161,7 @@ func OpenOneInTmux(hostname string) {
 	})
 }
 
-func OpenSelectedInTmux(mode Mode, targetHosts []string) {
+func OpenSelectedInTmuxWithCommand(mode Mode, targetHosts []string, command string) {
 	if len(targetHosts) == 0 {
 		return
 	}
@@ -151,29 +173,34 @@ func OpenSelectedInTmux(mode Mode, targetHosts []string) {
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tviewUtils.App.Suspend(func() {
-			openExtraHosts(currentTmuxId, mode, targetHosts)
-			runSSH(targetHosts[0])
+			openExtraHostsWithCommand(currentTmuxId, mode, targetHosts, command)
+			runSSHWithCommand(targetHosts[0], command)
 		})
 		return
 	}
 
-	SessionCreator(targetHosts[0])
+	SessionCreatorWithCommand(targetHosts[0], command)
 	tviewUtils.App.Suspend(func() {
 		defer func() {
 			tmuxId = ""
 		}()
 
-		openExtraHosts(tmuxId, mode, targetHosts)
+		openExtraHostsWithCommand(tmuxId, mode, targetHosts, command)
 		attachToSession(tmuxId)
 	})
 }
 
-// openExtraHosts opens hosts[1:] in the tmux session/window identified
-// by target. hosts[0] is expected to already be running in the session.
-func openExtraHosts(target string, mode Mode, hosts []string) {
+func OpenSelectedInTmux(mode Mode, targetHosts []string) {
+	OpenSelectedInTmuxWithCommand(mode, targetHosts, "")
+}
+
+// openExtraHostsWithCommand opens hosts[1:] in the tmux session/window identified
+// by target, executing remoteCmd on each host if provided. hosts[0] is expected
+// to already be running in the session.
+func openExtraHostsWithCommand(target string, mode Mode, hosts []string, remoteCmd string) {
 	for _, host := range hosts[1:] {
 		var splitCmd *exec.Cmd
-		sshArgs := append([]string{"ssh"}, buildSSHArgs(host)...)
+		sshArgs := append([]string{"ssh"}, buildSSHArgsWithCommand(host, remoteCmd)...)
 		if mode == Window {
 			cmdArgs := append([]string{"new-window", "-t", target, "-n", host}, sshArgs...)
 			splitCmd = exec.Command("tmux", cmdArgs...)
@@ -207,6 +234,10 @@ func openExtraHosts(target string, mode Mode, hosts []string) {
 	if err := exec.Command("tmux", "select-layout", "-t", target, "tiled").Run(); err != nil {
 		fmt.Printf("Error selecting layout: %v\n", err)
 	}
+}
+
+func openExtraHosts(target string, mode Mode, hosts []string) {
+	openExtraHostsWithCommand(target, mode, hosts, "")
 }
 
 func attachToSession(id string) {

@@ -116,3 +116,7 @@
 - [x] **تکمیل خودکار درون‌خطی و متن شبح برای دستورات حالت `:` (Inline Command Autocomplete & Ghost-Text - ADR 0008)**
   - *توضیح:* پیاده‌سازی `AutocompleteInputField` با نمایش متن شبح درون‌خطی (Inline Ghost-Text) به رنگ فیروزه‌ای (`#38bdf8`) دقیقاً مشابه k9s و fish، تکمیل خودکار و چرخش میان گزینه‌ها با کلید `Tab`، پذیرش پیشنهاد با `Right Arrow`، و اتصال داینامیک به تگ‌های تعریف‌شده در `HostsMeta` برای دستورات `:tag` و `:select`.
   - *محل اعمال:* `component/searchBox.go`، `component/autocomplete_test.go` و `main.go`
+
+- [x] **اجرای درلحظه دستورات ریموت روی سرورهای انتخاب‌شده در تیماکس با کلید `<` (On-Demand Remote Command Execution - ADR 0009)**
+  - *توضیح:* امکان انتخاب چندین سرور با `Space` و فشردن کلید `<` (یا `>`) جهت باز شدن پرامپت اجرای دستور ریموت (مثلاً `htop`، `df -h`، `uptime`) روی تمام سرورهای انتخاب‌شده در پنجره‌های کاشی‌بندی‌شده (Tiled Panes) در Tmux. تخصیص خودکار ترمینال مجازی (`-t`) برای ابزارهای تعاملی نظیر `htop` و تنظیم `remain-on-exit` در Tmux برای مشاهده ماندگار خروجی دستورات لحظه‌ای نظیر `df -h`. پشتیبانی از اجرای معادل از طریق دستورات پالت `:run <cmd>` و `:exec <cmd>`.
+  - *محل اعمال:* `tmuxUtils/connectAll.go`، `component/searchBox.go`، `component/command.go`، `component/footer.go` و `main.go`

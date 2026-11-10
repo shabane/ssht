@@ -435,6 +435,7 @@ func ShowHelpGuide() {
 	ListBox.AddItem("o", "Connect To All Filtered/Selected Hosts In Synchronized Pane", 0, nil)
 	ListBox.AddItem("/", "Focus Search Box", 0, nil)
 	ListBox.AddItem(":", "Command Prompt Mode (:tag, :proxy, :fwd, etc.)", 0, nil)
+	ListBox.AddItem("< / >", "Run On-Demand Command Across Selected Hosts in Tmux", 0, nil)
 	ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
 	ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
 	ListBox.AddItem("CTRL+T", "Connect to Selected Host with Remote Tmux", 0, nil)

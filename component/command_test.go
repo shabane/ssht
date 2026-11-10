@@ -425,3 +425,22 @@ func TestIsViewFilter(t *testing.T) {
 		}
 	}
 }
+
+func TestExecuteCommand_RunExec(t *testing.T) {
+	resetState()
+
+	resNoCmd := ExecuteCommand(":run", "")
+	if resNoCmd.Action != "exec" || resNoCmd.Handled {
+		t.Errorf("expected usage message when no command provided, got %+v", resNoCmd)
+	}
+
+	resRun := ExecuteCommand(":run htop", "")
+	if resRun.Action != "exec" || !resRun.Handled || resRun.Target != "htop" {
+		t.Errorf("expected action exec with target 'htop', got %+v", resRun)
+	}
+
+	resExec := ExecuteCommand(":exec df -h", "")
+	if resExec.Action != "exec" || !resExec.Handled || resExec.Target != "df -h" {
+		t.Errorf("expected action exec with target 'df -h', got %+v", resExec)
+	}
+}

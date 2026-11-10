@@ -10,7 +10,7 @@ func TestUpdateFooter_K9sShortcuts(t *testing.T) {
 
 	UpdateFooter(0)
 	text := Footer.GetText(true)
-	expectedShortcuts := []string{"<s> Shell", "<d> Describe", "<e> Edit", "<w> Direct", "<a> Tiled", "<o> Sync", "</> Search", "<:> Cmd"}
+	expectedShortcuts := []string{"<s> Shell", "<d> Describe", "<e> Edit", "<w> Direct", "<a> Tiled", "<o> Sync", "</> Search", "<:> Cmd", "<<> Run"}
 	for _, sc := range expectedShortcuts {
 		if !strings.Contains(text, sc) {
 			t.Errorf("expected footer to contain %q, got: %q", sc, text)
@@ -43,6 +43,19 @@ func TestUpdateFooter_K9sShortcuts(t *testing.T) {
 	searchText := Footer.GetText(true)
 	if !strings.Contains(searchText, "Filter:") || !strings.Contains(searchText, "#tag") {
 		t.Errorf("expected search footer hints, got: %q", searchText)
+	}
+
+	// Test remote command hints
+	ShowRemoteCommandFooterHints(3, "")
+	remoteTextMulti := Footer.GetText(true)
+	if !strings.Contains(remoteTextMulti, "3 selected hosts") {
+		t.Errorf("expected multi-target remote command hints, got: %q", remoteTextMulti)
+	}
+
+	ShowRemoteCommandFooterHints(1, "my-server")
+	remoteTextSingle := Footer.GetText(true)
+	if !strings.Contains(remoteTextSingle, "my-server") {
+		t.Errorf("expected single-target remote command hints, got: %q", remoteTextSingle)
 	}
 
 	// Test restore

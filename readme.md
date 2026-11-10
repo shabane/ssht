@@ -70,6 +70,7 @@ This script will automatically detect your OS/architecture, download the correct
 |    `c`       | Run configured `RemoteCommand` (if defined)      |
 |    `a`       | Open Filtered/Selected Hosts in Tailed Tmux      |
 |    `o`       | Open Filtered/Selected Hosts With Synced Panes   |
+|  `<` / `>`   | Run On-Demand Remote Command Across Selected Hosts in Tmux |
 |    `:`       | Command prompt mode (`:tag`, `:proxy`, `:fwd`...) |
 |    `/`       | Quick search / filter mode (`#tag`, `tag:...`)   |
 |    Space     | Toggle selection of host ([x])                   |
@@ -109,6 +110,7 @@ Press `:` from the host list to enter command mode. Typing displays an inline gh
 | `:badkeys` | Filter view to hosts with missing or insecure identity files |
 | `:keys` | Filter view to hosts with an explicit `IdentityFile` |
 | `:cmd` | Filter view to hosts with a configured `RemoteCommand` |
+| `:run <cmd>` | Execute on-demand remote command across selected hosts in tmux (alias `:exec`) |
 | `:tag <name>` | Filter view to hosts matching specified tag |
 | `:all` | Reset all view filters and restore all hosts |
 

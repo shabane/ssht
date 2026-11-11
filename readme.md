@@ -116,16 +116,32 @@ Press `:` from the host list to enter command mode. Typing displays an inline gh
 
 ### Demos
 
-#### 1. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct / `CTRL+T` for Remote Tmux)
+#### 1. Host Inspection Modal (`d`)
+Inspect all SSH configuration directives, keys, tunnels, and jump proxies with instant navigation:
+![Host Inspection Modal](assets/describe_modal.gif)
+
+#### 2. Command Palette & Ghost-Text Autocomplete (`:`)
+K9s-style command palette with cyan ghost text placeholder suggestions, `Tab` cycling, and `Right Arrow` to accept:
+![Command Palette](assets/command_palette.gif)
+
+#### 3. On-Demand Remote Command Execution (`<` or `>`)
+Select multiple hosts with `Space` and execute arbitrary ad-hoc remote commands (e.g. `htop`, `df -h`) in parallel across tmux:
+![On-Demand Remote Command](assets/remote_command.gif)
+
+#### 4. Fast Search, Tag Filtering & Vim Navigation
+Filter hosts by query or tags (`#prod`), navigate using Vim keys (`j`/`k`/`g`/`G`), and jump straight into hosts:
+![Search and Vim Navigation](assets/search_and_vim.gif)
+
+#### 5. Connect to Single Host (Press `Enter` / `CTRL+W` for Direct / `CTRL+T` for Remote Tmux)
 ![Connect One](assets/connect_one.gif)
 
-#### 2. Connect to All (Tailed Mode - `CTRL+A`)
+#### 6. Connect to All (Tailed Mode - `CTRL+A`)
 ![Connect All Tailed](assets/connect_all_tailed.gif)
 
-#### 3. Connect to All with Synced Panes (`CTRL+O`)
+#### 7. Connect to All with Synced Panes (`CTRL+O`)
 ![Connect All Synced](assets/connect_all_synced.gif)
 
-#### 4. Connect to All in New Windows (`CTRL+N`)
+#### 8. Connect to All in New Windows (`CTRL+N`)
 ![Connect All Windows](assets/connect_all_windows.gif)
 
 #### Building from Source

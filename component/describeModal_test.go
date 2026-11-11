@@ -342,3 +342,37 @@ func TestNewDescribeModal_VimScrollAndDismiss(t *testing.T) {
 		t.Errorf("expected onClose to be called on 'H'")
 	}
 }
+
+func TestNewDescribeModal_SolidBackground(t *testing.T) {
+	meta := sshUtils.HostMetadata{
+		Alias: "bg-test-host",
+	}
+
+	primitive := NewDescribeModal(meta, nil, nil, nil, nil)
+	outerFlex, ok := primitive.(*tview.Flex)
+	if !ok {
+		t.Fatalf("expected *tview.Flex, got %T", primitive)
+	}
+
+	// Navigate to inner modalBox
+	// outerFlex item 1 is middle column Flex
+	middleCol := outerFlex.GetItem(1).(*tview.Flex)
+	// middleCol item 1 is modalBox Flex
+	modalBox := middleCol.GetItem(1).(*tview.Flex)
+
+	if modalBox.GetBackgroundColor() == tcell.ColorDefault {
+		t.Errorf("modalBox should not have transparent ColorDefault background")
+	}
+	if modalBox.GetDrawFunc() == nil {
+		t.Errorf("modalBox should have a DrawFunc to clear background")
+	}
+
+	// modalBox item 0 is textView
+	textView := modalBox.GetItem(0).(*tview.TextView)
+	if textView.GetBackgroundColor() == tcell.ColorDefault {
+		t.Errorf("textView should not have transparent ColorDefault background")
+	}
+	if textView.GetDrawFunc() == nil {
+		t.Errorf("textView should have a DrawFunc to clear background")
+	}
+}

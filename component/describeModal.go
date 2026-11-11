@@ -116,17 +116,38 @@ func BuildDescribeContent(meta sshUtils.HostMetadata) string {
 
 // NewDescribeModal returns a centered modal overlay primitive displaying host details.
 func NewDescribeModal(meta sshUtils.HostMetadata, onConnect func(), onEdit func(), onRunCmd func(), onClose func()) tview.Primitive {
+	modalBg := tview.Styles.PrimitiveBackgroundColor
+
 	textView := tview.NewTextView().
 		SetDynamicColors(true).
 		SetScrollable(true)
-	textView.SetBackgroundColor(tcell.ColorDefault)
+	textView.SetBackgroundColor(modalBg)
 	textView.SetText(BuildDescribeContent(meta))
+	textView.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		bgStyle := tcell.StyleDefault.Background(modalBg)
+		for row := y; row < y+height; row++ {
+			for col := x; col < x+width; col++ {
+				screen.SetContent(col, row, ' ', nil, bgStyle)
+			}
+		}
+		return x, y, width, height
+	})
 
 	modalBox := tview.NewFlex().SetDirection(tview.FlexRow)
 	modalBox.SetBorder(true)
 	modalBox.SetBorderColor(tcell.GetColor("#42d1f5"))
+	modalBox.SetBackgroundColor(modalBg)
 	modalBox.SetTitle(fmt.Sprintf(" Host Details: %s ", meta.Alias))
 	modalBox.SetBorderPadding(1, 1, 2, 2)
+	modalBox.SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+		bgStyle := tcell.StyleDefault.Background(modalBg)
+		for row := y + 1; row < y+height-1; row++ {
+			for col := x + 1; col < x+width-1; col++ {
+				screen.SetContent(col, row, ' ', nil, bgStyle)
+			}
+		}
+		return modalBox.GetInnerRect()
+	})
 	modalBox.AddItem(textView, 0, 1, true)
 
 	inputCapture := func(event *tcell.EventKey) *tcell.EventKey {

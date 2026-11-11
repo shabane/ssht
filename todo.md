@@ -120,3 +120,28 @@
 - [x] **اجرای درلحظه دستورات ریموت روی سرورهای انتخاب‌شده در تیماکس با کلید `<` (On-Demand Remote Command Execution - ADR 0009)**
   - *توضیح:* امکان انتخاب چندین سرور با `Space` و فشردن کلید `<` (یا `>`) جهت باز شدن پرامپت اجرای دستور ریموت (مثلاً `htop`، `df -h`، `uptime`) روی تمام سرورهای انتخاب‌شده در پنجره‌های کاشی‌بندی‌شده (Tiled Panes) در Tmux. تخصیص خودکار ترمینال مجازی (`-t`) برای ابزارهای تعاملی نظیر `htop` و بازگشت خودکار و روان به محیط ssht با خروج از دستور (زدن `q` یا بستن پنجره‌ها). پشتیبانی از اجرای معادل از طریق دستورات پالت `:run <cmd>` و `:exec <cmd>`.
   - *محل اعمال:* `tmuxUtils/connectAll.go`، `component/searchBox.go`، `component/command.go`، `component/footer.go` و `main.go`
+
+---
+
+## 🔴 فاز ۶: انتقال فایل، SFTP، تکمیل مسیرهای محلی/ریموت و تفکیک کامند پالت (ADR 0010)
+
+- [ ] **تفکیک کامل فیلترها از کامند پالت (Separation of Search `/` and Command `:`)**
+  - *توضیح:* انتقال تمام فیلترهای دایرکتیوی (`proxy:`, `fwd:`, `badkeys:`, `keys:`, `cmd:`) و تگ‌ها (`#tag`, `tag:<name>`) به باکس جستجو (`/`) و تبدیل پرامپت `:` به حالت صرفاً عملیاتی (Command Mode).
+  - *محل اعمال:* `component/searchBox.go`، `component/command.go`، `sshUtils/sshUtils.go` و `main.go`
+
+- [ ] **اتصال SFTP تعاملی تک‌میزبان و گروهی (Interactive SFTP - Key `f` & `:sftp`)**
+  - *توضیح:* کلید `f` در لیست و دستور `:sftp` در پالت برای هاست تکی شل تعاملی SFTP را باز کند؛ در صورت انتخاب چند هاست، نشست‌های SFTP را به صورت کاشی‌بندی‌شده درون Tmux باز کند.
+  - *محل اعمال:* `tmuxUtils/sftp.go`، `component/listBox.go`، `component/footer.go` و `main.go`
+
+- [ ] **آپلود گروهی فایل با دستور `:upload` / `:up` (Multi-Host Parallel SCP Upload)**
+  - *توضیح:* دستور `:up <local_path> [remote_path]` برای ارسال موازی فایل یا پوشه به تمام سرورهای تیک‌خورده در پس‌زمینه با `scp` و نمایش وضعیت در فوتر.
+  - *محل اعمال:* `sshUtils/transfer.go`، `component/command.go` و `main.go`
+
+- [ ] **دانلود گروهی فایل با دستور `:download` / `:dw` (Multi-Host Parallel SCP Download)**
+  - *توضیح:* دستور `:dw <remote_path> [local_path]` برای دانلود فایل از سرورهای انتخابی به مسیر محلی با تفکیک خودکار پوشه به ازای هر سرور (`<local_path>/<hostname>/<filename>`) جهت جلوگیری از overwrite.
+  - *محل اعمال:* `sshUtils/transfer.go`، `component/command.go` و `main.go`
+
+- [ ] **تکمیل خودکار مسیرهای محلی و ریموت با کلید Tab (Local & Remote Path Autocomplete)**
+  - *توضیح:* پشتیبانی از تکمیل مسیرهای فایل‌سیستم محلی با `os.ReadDir` و تکمیل مسیرهای فایل‌سیستم سرور ریموت با کش‌گذاری و کوئری سریع پس‌زمینه با Ghost-Text فیروزه‌ای هنگام فشردن کلید `Tab`.
+  - *محل اعمال:* `component/searchBox.go`، `sshUtils/remotePath.go` و `component/autocomplete_test.go`
+

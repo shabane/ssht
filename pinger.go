@@ -35,9 +35,10 @@ loop:
 			break
 		}
 
-		// All host facts come from the parse-time metadata snapshot: no
-		// ssh_config access happens on this goroutine, so nothing here can
-		// race with config reloads on the UI thread.
+		// All host facts come from the parse-time metadata snapshot (no
+		// ssh_config access on this goroutine); the snapshot read is
+		// mutex-guarded against reloads publishing a fresh one on the UI
+		// thread.
 		meta := sshUtils.GetHostMeta(host)
 
 		// If host is behind a ProxyJump or ProxyCommand, direct local TCP dial

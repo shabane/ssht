@@ -845,3 +845,64 @@ func TestGetHostMeta(t *testing.T) {
 		t.Fatalf("unexpected metadata: %+v", meta)
 	}
 }
+
+// TestGetHostMeta_ConcurrentWithGetAllHosts reproduces the ping-vs-reload
+// race: the ping goroutine reads the snapshot via GetHostMeta while a
+// :reload / editor-exit re-parse on another thread republishes it. The
+// snapshot read and the publish are mutex-guarded, so this must stay clean
+// under -race.
+func TestGetHostMeta_ConcurrentWithGetAllHosts(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config")
+	content := "Host race-a\n    HostName 10.0.0.1\n\nHost race-b\n    HostName 10.0.0.2\n"
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+	if _, err := GetAllHosts(configPath); err != nil {
+		t.Fatalf("initial GetAllHosts failed: %v", err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 100; i++ {
+			if _, err := GetAllHosts(configPath); err != nil {
+				t.Errorf("concurrent reload failed: %v", err)
+				return
+			}
+		}
+	}()
+	for i := 0; i < 2000; i++ {
+		if meta := GetHostMeta("race-a"); meta.HostName != "10.0.0.1" {
+			t.Errorf("unexpected HostName for race-a during concurrent reload: %q", meta.HostName)
+			break
+		}
+	}
+	<-done
+}
+
+// TestGetAllHosts_FailedParseKeepsPreviousSnapshot pins the failure contract
+// of a reload: a config that fails to parse (e.g. a fumbled edit saved from
+// $EDITOR) must leave the previous snapshot fully intact.
+func TestGetAllHosts_FailedParseKeepsPreviousSnapshot(t *testing.T) {
+	tmpDir := t.TempDir()
+	goodPath := filepath.Join(tmpDir, "good_config")
+	if err := os.WriteFile(goodPath, []byte("Host keep-host\n    HostName 10.0.0.9\n"), 0600); err != nil {
+		t.Fatalf("failed to write good config: %v", err)
+	}
+	if _, err := GetAllHosts(goodPath); err != nil {
+		t.Fatalf("initial GetAllHosts failed: %v", err)
+	}
+
+	badPath := filepath.Join(tmpDir, "bad_config")
+	if err := os.WriteFile(badPath, []byte("Host broken\n    Match\n"), 0600); err != nil {
+		t.Fatalf("failed to write bad config: %v", err)
+	}
+	if _, err := GetAllHosts(badPath); err == nil {
+		t.Fatal("expected parse error for malformed config, got nil")
+	}
+
+	if meta := GetHostMeta("keep-host"); meta.HostName != "10.0.0.9" {
+		t.Errorf("failed reload wiped the snapshot: keep-host HostName = %q, want 10.0.0.9", meta.HostName)
+	}
+}

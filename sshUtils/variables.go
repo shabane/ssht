@@ -1,5 +1,7 @@
 package sshUtils
 
+import "sync"
+
 // HostMetadata holds parsed SSH configuration directives and source tracking
 // information for an SSH host alias.
 type HostMetadata struct {
@@ -40,6 +42,12 @@ func (m HostMetadata) DialTarget() (host, port string) {
 
 // HostsMeta maps host aliases to their rich metadata.
 var HostsMeta = make(map[string]HostMetadata)
+
+// hostsMu guards cross-goroutine access to HostsMeta and hostConfigs: the
+// ping goroutine reads the snapshot via GetHostMeta while reloads on the UI
+// thread build a fresh one and publish it under the write lock. Test code
+// assigning these maps directly is single-threaded by construction.
+var hostsMu sync.RWMutex
 
 var AllHosts []string
 

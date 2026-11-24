@@ -350,6 +350,45 @@ Host inherit-host
 	}
 }
 
+func TestHostMetadata_DialTarget(t *testing.T) {
+	tests := []struct {
+		name string
+		meta HostMetadata
+		want string
+		port string
+	}{
+		{
+			name: "explicit HostName and Port pass through",
+			meta: HostMetadata{Alias: "full", HostName: "10.0.0.5", Port: "2222"},
+			want: "10.0.0.5",
+			port: "2222",
+		},
+		{
+			name: "empty HostName falls back to the alias (pinger rule)",
+			meta: HostMetadata{Alias: "bare-host", HostName: "", Port: "22"},
+			want: "bare-host",
+			port: "22",
+		},
+		{
+			name: "empty Port defaults to 22",
+			meta: HostMetadata{Alias: "noport", HostName: "h.example", Port: ""},
+			want: "h.example",
+			port: "22",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotHost, gotPort := tc.meta.DialTarget()
+			if gotHost != tc.want {
+				t.Errorf("DialTarget() host = %q, want %q", gotHost, tc.want)
+			}
+			if gotPort != tc.port {
+				t.Errorf("DialTarget() port = %q, want %q", gotPort, tc.port)
+			}
+		})
+	}
+}
+
 func TestHostMetadata_KeyPermissions(t *testing.T) {
 	tmpDir := t.TempDir()
 

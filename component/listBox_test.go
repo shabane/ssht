@@ -39,6 +39,43 @@ func TestFormatHost_BasicAndColor(t *testing.T) {
 	}
 }
 
+func TestFormatHost_SnapshotRendering(t *testing.T) {
+	origMeta := sshUtils.HostsMeta
+	origColors := hostColors
+	origMaxHostLen := sshUtils.MaxHostLen
+	defer func() {
+		sshUtils.HostsMeta = origMeta
+		hostColors = origColors
+		sshUtils.MaxHostLen = origMaxHostLen
+	}()
+	hostColors = make(map[string]string)
+
+	sshUtils.MaxHostLen = 20
+	sshUtils.HostsMeta = map[string]sshUtils.HostMetadata{
+		"full-host": {Alias: "full-host", HostName: "10.1.2.3", User: "deploy"},
+		"noip-host": {Alias: "noip-host"},
+		"jump-host": {Alias: "jump-host", HostName: "10.9.9.9", ProxyJump: "bastion.corp"},
+	}
+
+	formatted := FormatHost("full-host", "")
+	if !strings.Contains(formatted, "deploy@10.1.2.3") {
+		t.Errorf("expected snapshot user@ip 'deploy@10.1.2.3', got %q", formatted)
+	}
+
+	formattedNoIP := FormatHost("noip-host", "")
+	if !strings.Contains(formattedNoIP, "| n/a") {
+		t.Errorf("expected 'n/a' for host without HostName, got %q", formattedNoIP)
+	}
+
+	formattedProxy := FormatHost("jump-host", "")
+	if !strings.Contains(formattedProxy, tview.Escape("[proxy]")) {
+		t.Errorf("expected [proxy] prefix for ProxyJump host, got %q", formattedProxy)
+	}
+	if !strings.Contains(formattedProxy, "[yellow]jump-host") {
+		t.Errorf("expected default yellow alias for proxy host, got %q", formattedProxy)
+	}
+}
+
 func TestSelectionAndToggle(t *testing.T) {
 	sshUtils.MaxHostLen = 12
 	Clear()

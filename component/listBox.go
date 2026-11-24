@@ -163,9 +163,10 @@ func FormatHost(host, color string) string {
 }
 
 func formatHostLocked(host, color string) string {
-	proxyJump := ssh_config.Get(host, "proxyjump")
-	proxyCommand := ssh_config.Get(host, "proxycommand")
-	isProxy := proxyJump != "" || proxyCommand != ""
+	// All host facts come from the parse-time metadata snapshot — no live
+	// ssh_config access from the render path.
+	meta := sshUtils.GetHostMeta(host)
+	isProxy := meta.ProxyJump != "" || meta.ProxyCommand != ""
 
 	if isProxy && color == "" {
 		color = "yellow"
@@ -177,11 +178,11 @@ func formatHostLocked(host, color string) string {
 		color = existingColor
 	}
 
-	ip := ssh_config.Get(host, "hostname")
+	ip := meta.HostName
 	if ip == "" {
 		ip = "n/a"
 	}
-	user := ssh_config.Get(host, "user")
+	user := meta.User
 	var target string
 	if user != "" {
 		target = fmt.Sprintf("%s@%s", user, ip)

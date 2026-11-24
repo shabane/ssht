@@ -34,6 +34,11 @@ func GetAllHosts(customPath string) ([]string, error) {
 		}
 	}
 	CustomConfigPath = configPath
+	// After the ADR 0010 snapshot migration, ssh_config is read only on this
+	// parse path: the pinger and every renderer consume the HostsMeta
+	// snapshot instead. Replacing DefaultUserSettings (and its ConfigFinder)
+	// here therefore cannot race with any concurrent ssh_config.Get — by
+	// construction there are none.
 	ssh_config.DefaultUserSettings = &ssh_config.UserSettings{
 		IgnoreErrors: false,
 	}

@@ -373,8 +373,9 @@ func main() {
 					}
 					onEdit := func() {
 						closeModal()
+						// LaunchEditorByHost already re-parses the config on
+						// return (editor.go GetAllHosts) — one reload per edit.
 						_ = sshUtils.LaunchEditorByHost(host)
-						_, _ = sshUtils.GetAllHosts(configPath)
 						component.RefreshList()
 					}
 					onRunCmd := func() {
@@ -396,8 +397,9 @@ func main() {
 			if !stopPing.Load() {
 				index := component.ListBox.GetCurrentItem()
 				if host, ok := component.GetHost(index); ok {
+					// LaunchEditorByHost already re-parses the config on
+					// return (editor.go GetAllHosts) — one reload per edit.
 					_ = sshUtils.LaunchEditorByHost(host)
-					_, _ = sshUtils.GetAllHosts(configPath)
 					component.RefreshList()
 				}
 			}

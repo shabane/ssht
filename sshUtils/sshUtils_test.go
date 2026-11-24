@@ -789,7 +789,9 @@ Host plain-host
 }
 
 func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
-	// Test that SearchHostname does not panic and resolves directives when HostsMeta is unpopulated
+	// Pin the no-snapshot contract: a host that is not in HostsMeta matches by
+	// alias only (zero-value metadata, Alias set), and the lookup must not
+	// reach through to ssh_config or write anything back into HostsMeta.
 	oldMeta := HostsMeta
 	defer func() { HostsMeta = oldMeta }()
 	HostsMeta = make(map[string]HostMetadata)
@@ -801,12 +803,29 @@ func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
 
 	results = SearchHostname([]string{"some-host"}, "some")
 	if len(results) != 1 || results[0] != "some-host" {
-		t.Errorf("expected ['some-host'], got %v", results)
+		t.Errorf("expected ['some-host'] via alias-only match, got %v", results)
 	}
 
 	results = SearchHostname([]string{"some-host"}, "#nonexistent")
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %v", results)
+	}
+
+	if len(HostsMeta) != 0 {
+		t.Errorf("expected no populate-on-miss write into HostsMeta, got %d entries: %v", len(HostsMeta), HostsMeta)
+	}
+
+	// Direct lookup of an unknown host returns zero-value metadata with the
+	// alias filled in — no live ssh_config read, no side effect.
+	meta := GetHostMeta("some-host")
+	if meta.Alias != "some-host" {
+		t.Errorf("expected Alias 'some-host' on miss, got %q", meta.Alias)
+	}
+	if meta.HostName != "" || meta.User != "" || meta.Port != "" {
+		t.Errorf("expected zero-value directives on miss, got %+v", meta)
+	}
+	if len(HostsMeta) != 0 {
+		t.Errorf("expected GetHostMeta miss to leave HostsMeta empty, got %d entries", len(HostsMeta))
 	}
 }
 

@@ -316,6 +316,10 @@ func GetHostMeta(host string) HostMetadata {
 	return getHostMeta(host)
 }
 
+// getHostMeta returns metadata for the given host alias. Hosts parsed at
+// startup are always present; an unknown host gets zero-value metadata with
+// the alias filled in — no ssh_config reach-through and no map write, so
+// lookups are safe on any goroutine and cannot mutate shared state.
 func getHostMeta(host string) HostMetadata {
 	if HostsMeta == nil {
 		HostsMeta = make(map[string]HostMetadata)
@@ -323,8 +327,7 @@ func getHostMeta(host string) HostMetadata {
 	if meta, ok := HostsMeta[host]; ok {
 		return meta
 	}
-	populateHostMetadata(host, "", 0)
-	return HostsMeta[host]
+	return HostMetadata{Alias: host}
 }
 
 func hostHasTag(tags []string, val string) bool {

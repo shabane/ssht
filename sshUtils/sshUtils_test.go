@@ -200,6 +200,8 @@ Host prod-web
 
 Host default-host
     HostName 10.0.0.1
+
+Host alias-only
 `, keyPath)
 
 	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
@@ -210,8 +212,8 @@ Host default-host
 	if err != nil {
 		t.Fatalf("GetAllHosts failed: %v", err)
 	}
-	if len(hosts) != 2 {
-		t.Fatalf("expected 2 hosts, got %d", len(hosts))
+	if len(hosts) != 3 {
+		t.Fatalf("expected 3 hosts, got %d", len(hosts))
 	}
 
 	meta, ok := HostsMeta["prod-web"]
@@ -288,6 +290,63 @@ Host default-host
 	}
 	if defMeta.SourceLine != 16 {
 		t.Errorf("expected SourceLine 16, got %d", defMeta.SourceLine)
+	}
+
+	// Pin the alias-only contract: a host with no HostName/Port/User directives.
+	// HostName must stay empty in the snapshot (NOT the alias) — the pinger's
+	// alias-fallback and formatHost's "n/a" rendering rule depend on it. Port is
+	// baked to the ssh default "22" at populate time.
+	aliasMeta, ok := HostsMeta["alias-only"]
+	if !ok {
+		t.Fatalf("HostsMeta missing alias-only")
+	}
+	if aliasMeta.HostName != "" {
+		t.Errorf("expected empty HostName for alias-only, got %q", aliasMeta.HostName)
+	}
+	if aliasMeta.User != "" {
+		t.Errorf("expected empty User for alias-only, got %q", aliasMeta.User)
+	}
+	if aliasMeta.Port != "22" {
+		t.Errorf("expected default Port '22' for alias-only, got %q", aliasMeta.Port)
+	}
+	if aliasMeta.SourceLine != 19 {
+		t.Errorf("expected SourceLine 19 for alias-only, got %d", aliasMeta.SourceLine)
+	}
+}
+
+func TestHostMetadata_WildcardInheritance(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config")
+	configContent := `Host *
+    User shareduser
+
+Host inherit-host
+    HostName 1.2.3.4
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	hosts, err := GetAllHosts(configPath)
+	if err != nil {
+		t.Fatalf("GetAllHosts failed: %v", err)
+	}
+	if len(hosts) != 1 || hosts[0] != "inherit-host" {
+		t.Fatalf("expected only inherit-host (wildcard block skipped), got %v", hosts)
+	}
+
+	meta, ok := HostsMeta["inherit-host"]
+	if !ok {
+		t.Fatalf("HostsMeta missing inherit-host")
+	}
+	// Directives inherited from a wildcard Host * block must land in the
+	// snapshot at parse time (via getDirective's global fallback) — this is
+	// what lets formatHostLocked migrate to snapshot reads behavior-identically.
+	if meta.User != "shareduser" {
+		t.Errorf("expected wildcard-inherited User 'shareduser', got %q", meta.User)
+	}
+	if meta.HostName != "1.2.3.4" {
+		t.Errorf("expected HostName '1.2.3.4', got %q", meta.HostName)
 	}
 }
 

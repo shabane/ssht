@@ -206,6 +206,7 @@ func TestExecuteCommand_Sorting(t *testing.T) {
 	AddItem("charlie", "", 0, nil)
 	AddItem("alpha", "", 0, nil)
 	AddItem("bravo", "", 0, nil)
+	AddItem("noip-host", "", 0, nil)
 
 	sshUtils.HostsMeta["alpha"] = sshUtils.HostMetadata{
 		Alias:    "alpha",
@@ -219,25 +220,29 @@ func TestExecuteCommand_Sorting(t *testing.T) {
 		Alias:    "charlie",
 		HostName: "192.168.1.5",
 	}
+	sshUtils.HostsMeta["noip-host"] = sshUtils.HostMetadata{
+		Alias: "noip-host",
+	}
 
-	// 1. :sort name -> alpha, bravo, charlie
+	// 1. :sort name -> alpha, bravo, charlie, noip-host
 	resName := ExecuteCommand(":sort name", "")
 	if resName.Action != "sort" || !resName.Handled {
 		t.Fatalf("expected :sort name handled, got %v", resName)
 	}
 	vis := GetVisibleHosts()
-	if len(vis) != 3 || vis[0] != "alpha" || vis[1] != "bravo" || vis[2] != "charlie" {
-		t.Fatalf("expected [alpha, bravo, charlie], got %v", vis)
+	if len(vis) != 4 || vis[0] != "alpha" || vis[1] != "bravo" || vis[2] != "charlie" || vis[3] != "noip-host" {
+		t.Fatalf("expected [alpha, bravo, charlie, noip-host], got %v", vis)
 	}
 
-	// 2. :sort ip -> charlie (1.5), bravo (1.20), alpha (1.100)
+	// 2. :sort ip -> charlie (1.5), bravo (1.20), alpha (1.100); a host with an
+	// empty snapshot HostName has no parseable IP and sorts after all IP hosts.
 	resIP := ExecuteCommand(":sort ip", "")
 	if resIP.Action != "sort" || !resIP.Handled {
 		t.Fatalf("expected :sort ip handled, got %v", resIP)
 	}
 	vis = GetVisibleHosts()
-	if len(vis) != 3 || vis[0] != "charlie" || vis[1] != "bravo" || vis[2] != "alpha" {
-		t.Fatalf("expected [charlie, bravo, alpha], got %v", vis)
+	if len(vis) != 4 || vis[0] != "charlie" || vis[1] != "bravo" || vis[2] != "alpha" || vis[3] != "noip-host" {
+		t.Fatalf("expected [charlie, bravo, alpha, noip-host], got %v", vis)
 	}
 
 	// 3. :sort status -> selected first, green, yellow, red
@@ -252,9 +257,9 @@ func TestExecuteCommand_Sorting(t *testing.T) {
 		t.Fatalf("expected :sort status handled, got %v", resStatus)
 	}
 	vis = GetVisibleHosts()
-	// Priority: selected (bravo), green (alpha), yellow (charlie)
-	if len(vis) != 3 || vis[0] != "bravo" || vis[1] != "alpha" || vis[2] != "charlie" {
-		t.Fatalf("expected [bravo, alpha, charlie], got %v", vis)
+	// Priority: selected (bravo), green (alpha), yellow (charlie), pending (noip-host)
+	if len(vis) != 4 || vis[0] != "bravo" || vis[1] != "alpha" || vis[2] != "charlie" || vis[3] != "noip-host" {
+		t.Fatalf("expected [bravo, alpha, charlie, noip-host], got %v", vis)
 	}
 
 	// 4. Bare :sort (defaults to status)

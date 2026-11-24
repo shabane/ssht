@@ -11,7 +11,6 @@ import (
 	"ssht/sshUtils"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/kevinburke/ssh_config"
 	"github.com/rivo/tview"
 )
 
@@ -361,12 +360,10 @@ func SortVisibleByIP() {
 	mu.Lock()
 	defer mu.Unlock()
 
+	// Sort key comes from the parse-time snapshot: a host with no HostName
+	// directive sorts as an empty string (non-IP comparison).
 	getIP := func(h string) string {
-		meta := sshUtils.GetHostMeta(h)
-		if meta.HostName != "" {
-			return meta.HostName
-		}
-		return ssh_config.Get(h, "hostname")
+		return sshUtils.GetHostMeta(h).HostName
 	}
 
 	sort.SliceStable(visibleHosts, func(i, j int) bool {

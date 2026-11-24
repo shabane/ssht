@@ -375,7 +375,10 @@ func main() {
 						closeModal()
 						// LaunchEditorByHost already re-parses the config on
 						// return (editor.go GetAllHosts) — one reload per edit.
-						_ = sshUtils.LaunchEditorByHost(host)
+						// A failed parse keeps the previous snapshot intact.
+						if err := sshUtils.LaunchEditorByHost(host); err != nil {
+							component.SetFooterMessage(fmt.Sprintf("[red]Failed to reload config: %v[-]", err))
+						}
 						component.RefreshList()
 					}
 					onRunCmd := func() {
@@ -399,7 +402,10 @@ func main() {
 				if host, ok := component.GetHost(index); ok {
 					// LaunchEditorByHost already re-parses the config on
 					// return (editor.go GetAllHosts) — one reload per edit.
-					_ = sshUtils.LaunchEditorByHost(host)
+					// A failed parse keeps the previous snapshot intact.
+					if err := sshUtils.LaunchEditorByHost(host); err != nil {
+						component.SetFooterMessage(fmt.Sprintf("[red]Failed to reload config: %v[-]", err))
+					}
 					component.RefreshList()
 				}
 			}

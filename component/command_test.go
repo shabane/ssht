@@ -444,3 +444,25 @@ func TestExecuteCommand_RunExec(t *testing.T) {
 		t.Errorf("expected action exec with target 'df -h', got %+v", resExec)
 	}
 }
+
+func TestExecuteCommand_BangNonInteractive(t *testing.T) {
+	resetState()
+
+	resEmpty := ExecuteCommand(":!", "")
+	if resEmpty.Action != "exec_hold" || resEmpty.Handled {
+		t.Errorf("expected usage message when no command provided for :!, got %+v", resEmpty)
+	}
+	if !strings.Contains(resEmpty.Message, "Usage:") {
+		t.Errorf("expected usage message for bare :!, got %q", resEmpty.Message)
+	}
+
+	resWithSpace := ExecuteCommand(":! df -h .", "")
+	if resWithSpace.Action != "exec_hold" || !resWithSpace.Handled || resWithSpace.Target != "df -h ." {
+		t.Errorf("expected action exec_hold with target 'df -h .', got %+v", resWithSpace)
+	}
+
+	resNoSpace := ExecuteCommand(":!df -h .", "")
+	if resNoSpace.Action != "exec_hold" || !resNoSpace.Handled || resNoSpace.Target != "df -h ." {
+		t.Errorf("expected action exec_hold with target 'df -h .', got %+v", resNoSpace)
+	}
+}

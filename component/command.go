@@ -71,6 +71,23 @@ func ExecuteCommand(raw string, configPath string) CommandResult {
 	fields := strings.Fields(clean)
 	cmd := strings.ToLower(fields[0])
 
+	if strings.HasPrefix(clean, "!") {
+		cmdToRun := strings.TrimSpace(strings.TrimPrefix(clean, "!"))
+		if cmdToRun == "" {
+			return CommandResult{
+				Action:  "exec_hold",
+				Message: "[yellow]Usage: :! <command>[-]",
+				Handled: false,
+			}
+		}
+		return CommandResult{
+			Action:  "exec_hold",
+			Target:  cmdToRun,
+			Message: fmt.Sprintf("Running %q on selected hosts...", cmdToRun),
+			Handled: true,
+		}
+	}
+
 	switch cmd {
 	case "q", "quit", "exit":
 		if tviewUtils.App != nil {

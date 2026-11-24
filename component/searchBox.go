@@ -15,7 +15,7 @@ var baseCommands = []string{
 	":badkeys", ":keys", ":cmd", ":reload", ":quit",
 	":help", ":ping", ":select all", ":select ", ":clear",
 	":deselect", ":sort name", ":sort ip", ":sort status",
-	":all", ":tag ", ":run ", ":exec ",
+	":all", ":tag ", ":run ", ":exec ", ":! ",
 }
 
 // AutocompleteInputField embeds tview.InputField with inline ghost-text

@@ -160,6 +160,21 @@ func main() {
 			tmuxUtils.OpenSelectedInTmuxWithCommand(tmuxUtils.TailedPane, targets, cmdStr)
 		}
 
+		runHoldRemoteCommand := func(cmdStr string) {
+			targets := component.GetSelectedHosts()
+			if len(targets) == 0 {
+				index := component.ListBox.GetCurrentItem()
+				if host, ok := component.GetHost(index); ok {
+					targets = []string{host}
+				}
+			}
+			if len(targets) == 0 {
+				component.SetFooterMessage("[red]No hosts available to run command[-]")
+				return
+			}
+			tmuxUtils.OpenSelectedInTmuxWithHoldCommand(tmuxUtils.TailedPane, targets, cmdStr)
+		}
+
 		isCtrl := func(key tcell.Key, name string) bool {
 			return event.Key() == key || keyName == name || keyName == strings.Replace(name, "+", "-", 1)
 		}
@@ -219,7 +234,7 @@ func main() {
 						return nil
 					}
 				}
-				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" || strings.HasPrefix(component.SearchBox.GetText(), "<") || strings.HasPrefix(component.SearchBox.GetText(), ">") {
+				if strings.TrimSpace(component.SearchBox.GetText()) == "" || component.SearchBox.GetText() == ":" || strings.TrimSpace(component.SearchBox.GetText()) == ":!" || strings.HasPrefix(component.SearchBox.GetText(), "<") || strings.HasPrefix(component.SearchBox.GetText(), ">") {
 					hideSearchBox()
 				} else {
 					tviewUtils.App.SetFocus(component.ListBox)
@@ -268,6 +283,13 @@ func main() {
 						hideSearchBox()
 						if res.Target != "" {
 							runRemoteCommand(res.Target)
+						}
+					} else if res.Action == "exec_hold" {
+						hideSearchBox()
+						if res.Target != "" {
+							runHoldRemoteCommand(res.Target)
+						} else if res.Message != "" {
+							component.SetFooterMessage(res.Message)
 						}
 					} else {
 						// Action / control command (:q, :reload, :select, :clear, :ping, :sort) or unknown
@@ -439,6 +461,24 @@ func main() {
 		} else if isRuneKey(':') {
 			showSearchBox(":")
 			component.ShowCommandFooterHints()
+			return nil
+		} else if isRuneKey('!') {
+			selected := component.GetSelectedHosts()
+			targetCount := len(selected)
+			targetName := ""
+			if targetCount == 0 {
+				index := component.ListBox.GetCurrentItem()
+				if host, ok := component.GetHost(index); ok {
+					targetCount = 1
+					targetName = host
+				}
+			}
+			if targetCount == 0 {
+				component.SetFooterMessage("[yellow]No hosts available to run command[-]")
+				return nil
+			}
+			showSearchBox(":! ")
+			component.ShowRemoteCommandFooterHints(targetCount, targetName)
 			return nil
 		} else if isRuneKey('<') || isRuneKey('>') {
 			selected := component.GetSelectedHosts()

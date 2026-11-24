@@ -74,3 +74,17 @@ func TestBuildSSHArgsWithCommand(t *testing.T) {
 		t.Errorf("expected %v, got %v", expectedWithBoth, argsWithBoth)
 	}
 }
+
+func TestWrapHoldCommand(t *testing.T) {
+	if got := wrapHoldCommand(""); got != "" {
+		t.Errorf("expected empty string for empty command, got %q", got)
+	}
+
+	wrapped := wrapHoldCommand("df -h .")
+	if !strings.HasPrefix(wrapped, "df -h .;") {
+		t.Errorf("expected wrapped command to start with 'df -h .;', got %q", wrapped)
+	}
+	if !strings.Contains(wrapped, "Press Enter to close") || !strings.Contains(wrapped, "read") {
+		t.Errorf("expected wrapped command to wait for Enter, got %q", wrapped)
+	}
+}

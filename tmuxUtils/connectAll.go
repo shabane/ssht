@@ -39,6 +39,14 @@ func buildSSHArgsWithCommand(hostname string, remoteCmd string) []string {
 	return args
 }
 
+func wrapHoldCommand(remoteCmd string) string {
+	trimmed := strings.TrimSpace(remoteCmd)
+	if trimmed == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s; printf '\\n\\033[1;33m[Press Enter to close...]\\033[0m'; read -r _", trimmed)
+}
+
 func buildSSHArgs(hostname string) []string {
 	return buildSSHArgsWithCommand(hostname, "")
 }
@@ -184,6 +192,13 @@ func OpenSelectedInTmuxWithCommand(mode Mode, targetHosts []string, command stri
 		openExtraHostsWithCommand(tmuxId, mode, targetHosts, command)
 		attachToSession(tmuxId)
 	})
+}
+
+func OpenSelectedInTmuxWithHoldCommand(mode Mode, targetHosts []string, command string) {
+	if len(targetHosts) > 1 && mode == TailedPane {
+		mode = SyncedTailedPane
+	}
+	OpenSelectedInTmuxWithCommand(mode, targetHosts, wrapHoldCommand(command))
 }
 
 func OpenSelectedInTmux(mode Mode, targetHosts []string) {

@@ -48,6 +48,12 @@ func generateTmuxSessionId() string {
 }
 
 func SessionCreatorWithCommand(hostname string, remoteCmd string) {
+	if err := createSessionWithCommand(hostname, remoteCmd); err != nil {
+		fmt.Printf("Error creating session: %v\n", err)
+	}
+}
+
+func createSessionWithCommand(hostname string, remoteCmd string) error {
 	if tmuxId == "" {
 		tmuxId = generateTmuxSessionId()
 		if err := os.Setenv("TMUX_ID", tmuxId); err != nil {
@@ -57,11 +63,9 @@ func SessionCreatorWithCommand(hostname string, remoteCmd string) {
 		sshArgs := append([]string{"ssh"}, buildSSHArgsWithCommand(hostname, remoteCmd)...)
 		tmuxArgs := append([]string{"new-session", "-d", "-s", tmuxId}, sshArgs...)
 		initCmd := exec.Command("tmux", tmuxArgs...)
-		if err := initCmd.Run(); err != nil {
-			fmt.Printf("Error creating session: %v\n", err)
-			return
-		}
+		return initCmd.Run()
 	}
+	return nil
 }
 
 func SessionCreator(hostname string) {
@@ -158,82 +162,127 @@ func OpenOneInTmux(hostname string) {
 }
 
 func OpenSelectedInTmuxWithCommand(mode Mode, targetHosts []string, command string) {
+	options := connectionOptions{mode: mode, command: command, countPerHost: 1}
+	if err := openSelectedInTmux(targetHosts, options); err != nil {
+		fmt.Println(err)
+	}
+}
+
+// OpenRepeatedInTmux opens countPerHost SSH connections for each selected host.
+func OpenRepeatedInTmux(mode Mode, hosts []string, countPerHost int) error {
+	return openSelectedInTmux(hosts, connectionOptions{
+		mode: mode, countPerHost: countPerHost, repeated: true,
+	})
+}
+
+type connectionOptions struct {
+	mode         Mode
+	command      string
+	countPerHost int
+	repeated     bool
+}
+
+func openSelectedInTmux(targetHosts []string, options connectionOptions) error {
 	if len(targetHosts) == 0 {
-		return
+		return nil
 	}
 
 	if !EnsureTmux() {
-		return
+		return nil
 	}
 
+	var splitErr error
 	currentTmuxId := getCurrentTmuxSession()
 	if strings.HasPrefix(currentTmuxId, "ssht-") {
 		tviewUtils.App.Suspend(func() {
-			openExtraHostsWithCommand(currentTmuxId, mode, targetHosts, command)
-			runSSHWithCommand(targetHosts[0], command)
+			useCurrentPane := options.mode != Window || !options.repeated
+			splitErr = openConnections(currentTmuxId, targetHosts, options, useCurrentPane)
+			if useCurrentPane {
+				runSSHWithCommand(targetHosts[0], options.command)
+			}
 		})
-		return
+		return splitErr
 	}
 
-	SessionCreatorWithCommand(targetHosts[0], command)
+	if err := createSessionWithCommand(targetHosts[0], options.command); err != nil {
+		tmuxId = ""
+		return fmt.Errorf("could not create tmux session: %w", err)
+	}
 	tviewUtils.App.Suspend(func() {
 		defer func() {
 			tmuxId = ""
 		}()
 
-		openExtraHostsWithCommand(tmuxId, mode, targetHosts, command)
+		splitErr = openConnections(tmuxId, targetHosts, options, true)
 		attachToSession(tmuxId)
 	})
+	return splitErr
 }
 
 func OpenSelectedInTmux(mode Mode, targetHosts []string) {
 	OpenSelectedInTmuxWithCommand(mode, targetHosts, "")
 }
 
-// openExtraHostsWithCommand opens hosts[1:] in the tmux session/window identified
-// by target, executing remoteCmd on each host if provided. hosts[0] is expected
-// to already be running in the session.
-func openExtraHostsWithCommand(target string, mode Mode, hosts []string, remoteCmd string) {
-	for _, host := range hosts[1:] {
-		var splitCmd *exec.Cmd
-		sshArgs := append([]string{"ssh"}, buildSSHArgsWithCommand(host, remoteCmd)...)
-		if mode == Window {
-			cmdArgs := append([]string{"new-window", "-t", target, "-n", host}, sshArgs...)
-			splitCmd = exec.Command("tmux", cmdArgs...)
-		} else {
-			cmdArgs := append([]string{"split-window", "-f", "-t", target}, sshArgs...)
-			splitCmd = exec.Command("tmux", cmdArgs...)
+func openConnections(target string, hosts []string, options connectionOptions, useFirstPane bool) error {
+	layout := "tiled"
+	if options.mode == StackedPane {
+		layout = "even-vertical"
+	}
+	for index, host := range hosts {
+		count := options.countPerHost
+		if index == 0 && useFirstPane {
+			count--
 		}
+		sshArgs := append([]string{"ssh"}, buildSSHArgsWithCommand(host, options.command)...)
+		for range count {
+			var splitCmd *exec.Cmd
+			if options.mode == Window {
+				cmdArgs := append([]string{"new-window", "-t", target, "-n", host}, sshArgs...)
+				splitCmd = exec.Command("tmux", cmdArgs...)
+			} else {
+				cmdArgs := append([]string{"split-window", "-f", "-t", target}, sshArgs...)
+				splitCmd = exec.Command("tmux", cmdArgs...)
+			}
 
-		if err := splitCmd.Run(); err != nil {
-			fmt.Printf("Error splitting window: %v\n", err)
-		}
+			if output, err := splitCmd.CombinedOutput(); err != nil {
+				if options.repeated {
+					detail := strings.TrimSpace(string(output))
+					if detail != "" {
+						return fmt.Errorf("could not open all requested connections: %s", detail)
+					}
+					return fmt.Errorf("could not open all requested connections: %w", err)
+				}
+				fmt.Printf("Error splitting window: %v\n", err)
+			}
 
-		// Re-tile after every pane split so tmux always has room for the next
-		// one. Without this, repeated splits shrink the panes until tmux fails
-		// with "no space for new pane" (exit status 1) when connecting to many
-		// hosts. New windows don't share space, so this only applies to panes.
-		if mode != Window {
-			if err := exec.Command("tmux", "select-layout", "-t", target, "tiled").Run(); err != nil {
-				fmt.Printf("Error selecting layout: %v\n", err)
+			// Re-tile after every pane split so tmux always has room for the next
+			// one. Without this, repeated splits shrink the panes until tmux fails
+			// with "no space for new pane" (exit status 1) when connecting to many
+			// hosts. New windows don't share space, so this only applies to panes.
+			if options.mode != Window {
+				if err := exec.Command("tmux", "select-layout", "-t", target, layout).Run(); err != nil {
+					fmt.Printf("Error selecting layout: %v\n", err)
+				}
 			}
 		}
 	}
 
-	if mode == SyncedTailedPane {
+	if options.mode == SyncedTailedPane {
 		syncCmd := exec.Command("tmux", "set-window-option", "-t", target, "synchronize-panes", "on")
 		if err := syncCmd.Run(); err != nil {
 			fmt.Printf("Error synchronizing panes: %v\n", err)
 		}
 	}
 
-	if err := exec.Command("tmux", "select-layout", "-t", target, "tiled").Run(); err != nil {
-		fmt.Printf("Error selecting layout: %v\n", err)
+	if options.mode != Window {
+		if err := exec.Command("tmux", "select-layout", "-t", target, layout).Run(); err != nil {
+			if options.repeated {
+				return fmt.Errorf("could not apply tmux layout %s: %w", layout, err)
+			}
+			fmt.Printf("Error selecting layout: %v\n", err)
+		}
 	}
-}
-
-func openExtraHosts(target string, mode Mode, hosts []string) {
-	openExtraHostsWithCommand(target, mode, hosts, "")
+	return nil
 }
 
 func attachToSession(id string) {

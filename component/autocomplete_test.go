@@ -89,6 +89,19 @@ func TestGetCommandSuggestions_BaseCommands(t *testing.T) {
 	}
 }
 
+func TestAutocompleteOpenLayout(t *testing.T) {
+	field := &AutocompleteInputField{InputField: tview.NewInputField()}
+	field.SetText(":open 3 st")
+	field.UpdateSuggestions(field.GetText())
+	if !field.AutocompleteNext() || field.GetText() != ":open 3 stacked" {
+		t.Fatalf("expected Tab to complete stacked, got %q", field.GetText())
+	}
+	want := []string{":open 3 tiled", ":open 3 stacked", ":open 3 windows"}
+	if got := GetCommandSuggestions(":open 3 "); !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
 func TestGetCommandSuggestions_DynamicTags(t *testing.T) {
 	origMeta := sshUtils.HostsMeta
 	defer func() {

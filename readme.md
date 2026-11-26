@@ -111,8 +111,14 @@ Press `:` from the host list to enter command mode. Typing displays an inline gh
 | `:keys` | Filter view to hosts with an explicit `IdentityFile` |
 | `:cmd` | Filter view to hosts with a configured `RemoteCommand` |
 | `:run <cmd>` | Execute on-demand remote command across selected hosts in tmux (alias `:exec`) |
+| `:open 3` or `:open 3 tiled` | Open three tiled SSH panes per host selected with `Space` |
+| `:open 3 stacked` | Open three full-width SSH panes per selected host, stacked vertically in one window |
+| `:open 3 windows` | Open three tmux windows per selected host, each with one SSH connection |
+| `:3` | Shorthand for `:open 3 tiled` |
 | `:tag <name>` | Filter view to hosts matching specified tag |
 | `:all` | Reset all view filters and restore all hosts |
+
+The count applies to each selected host. With two hosts selected, `:open 3 windows` opens six windows. Type a space after the count and press `Tab` to cycle through the layouts.
 
 ### Demos
 

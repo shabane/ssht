@@ -8,4 +8,5 @@ const (
 	TailedPane Mode = iota
 	SyncedTailedPane
 	Window
+	StackedPane
 )

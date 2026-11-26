@@ -3,10 +3,12 @@ package component
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	"ssht/sshUtils"
+	"ssht/tmuxUtils"
 )
 
 func resetState() {
@@ -15,6 +17,74 @@ func resetState() {
 	sshUtils.HostsMeta = make(map[string]sshUtils.HostMetadata)
 	if SearchBox != nil {
 		SearchBox.SetText("")
+	}
+}
+
+func TestExecuteCommand_RepeatPanes(t *testing.T) {
+	resetState()
+	t.Cleanup(resetState)
+	AddItem("alpha", "", 0, nil)
+	AddItem("beta", "", 0, nil)
+	AddItem("unselected", "", 0, nil)
+
+	if result := ExecuteCommand(":4", ""); result.Handled || !strings.Contains(result.Message, "Space") {
+		t.Fatalf("expected a selection hint, got %+v", result)
+	}
+	ToggleSelect(0)
+	ToggleSelect(1)
+
+	for _, test := range []struct {
+		input string
+		count int
+	}{{":1", 1}, {":4", 4}, {":10", 10}} {
+		result := ExecuteCommand(test.input, "")
+		if result.Action != "open" || !result.Handled || result.CountPerHost != test.count ||
+			!slices.Equal(result.Hosts, []string{"alpha", "beta"}) {
+			t.Errorf("%s: expected %d panes for alpha and beta, got %+v", test.input, test.count, result)
+		}
+	}
+	for _, input := range []string{":0", ":-4", ":4 extra", ":999999999999999999999"} {
+		if result := ExecuteCommand(input, ""); result.Action != "open" || result.Handled {
+			t.Errorf("%s: expected an invalid pane count, got %+v", input, result)
+		}
+	}
+}
+
+func TestExecuteCommand_Open(t *testing.T) {
+	resetState()
+	t.Cleanup(resetState)
+	AddItem("alpha", "", 0, nil)
+	AddItem("beta", "", 0, nil)
+	AddItem("gamma", "", 0, nil)
+	if result := ExecuteCommand(":open 3 windows", ""); result.Handled || !strings.Contains(result.Message, "Space") {
+		t.Fatalf("expected a selection hint, got %+v", result)
+	}
+	ToggleSelect(0)
+	ToggleSelect(1)
+	for _, test := range []struct {
+		input string
+		mode  tmuxUtils.Mode
+	}{
+		{":open 3", tmuxUtils.TailedPane},
+		{":open 3 tiled", tmuxUtils.TailedPane},
+		{":open 3 stacked", tmuxUtils.StackedPane},
+		{":OPEN 3 WINDOWS", tmuxUtils.Window},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			result := ExecuteCommand(test.input, "")
+			if result.Action != "open" || !result.Handled || result.CountPerHost != 3 ||
+				result.Mode != test.mode || !slices.Equal(result.Hosts, []string{"alpha", "beta"}) {
+				t.Fatalf("expected to open connections for alpha and beta, got %+v", result)
+			}
+		})
+	}
+	for _, input := range []string{":open", ":open 0", ":open -3", ":open 3 unknown", ":open 3 tiled extra"} {
+		t.Run(input, func(t *testing.T) {
+			result := ExecuteCommand(input, "")
+			if result.Handled || !strings.Contains(result.Message, ":open") {
+				t.Fatalf("expected an open command usage hint, got %+v", result)
+			}
+		})
 	}
 }
 

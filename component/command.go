@@ -2,9 +2,11 @@ package component
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"ssht/sshUtils"
+	"ssht/tmuxUtils"
 	"ssht/tviewUtils"
 
 	"github.com/rivo/tview"
@@ -12,10 +14,44 @@ import (
 
 // CommandResult represents the outcome of executing a command in colon (:) mode.
 type CommandResult struct {
-	Action  string
-	Target  string
-	Message string
-	Handled bool
+	Action       string
+	Target       string
+	Message      string
+	Handled      bool
+	CountPerHost int
+	Mode         tmuxUtils.Mode
+	Hosts        []string
+}
+
+const openUsage = "[yellow]Usage: :open <count> [tiled|stacked|windows] (count must be positive)[-]"
+
+var openLayouts = []struct {
+	name string
+	mode tmuxUtils.Mode
+}{
+	{"tiled", tmuxUtils.TailedPane},
+	{"stacked", tmuxUtils.StackedPane},
+	{"windows", tmuxUtils.Window},
+}
+
+func openCommand(countText, layoutName string) CommandResult {
+	result := CommandResult{Action: "open", Message: openUsage}
+	count, err := strconv.ParseUint(countText, 10, strconv.IntSize-1)
+	if err != nil || count == 0 {
+		return result
+	}
+	for _, layout := range openLayouts {
+		if !strings.EqualFold(layout.name, layoutName) {
+			continue
+		}
+		hosts := GetSelectedHosts()
+		if len(hosts) == 0 {
+			result.Message = "[yellow]Select hosts with Space before opening connections[-]"
+			return result
+		}
+		return CommandResult{Action: "open", Handled: true, CountPerHost: int(count), Mode: layout.mode, Hosts: hosts}
+	}
+	return result
 }
 
 // IsViewFilter returns true if the command is a recognized view filter directive.
@@ -70,8 +106,22 @@ func ExecuteCommand(raw string, configPath string) CommandResult {
 
 	fields := strings.Fields(clean)
 	cmd := strings.ToLower(fields[0])
+	number := strings.TrimLeft(cmd, "+-")
+	if number != "" && number[0] >= '0' && number[0] <= '9' {
+		return openCommand(clean, "tiled")
+	}
 
 	switch cmd {
+	case "open":
+		switch len(fields) {
+		case 2:
+			return openCommand(fields[1], "tiled")
+		case 3:
+			return openCommand(fields[1], fields[2])
+		default:
+			return CommandResult{Action: "open", Message: openUsage}
+		}
+
 	case "q", "quit", "exit":
 		if tviewUtils.App != nil {
 			tviewUtils.App.Stop()

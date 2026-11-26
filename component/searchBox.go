@@ -3,6 +3,7 @@ package component
 import (
 	"sort"
 	"strings"
+	"unicode"
 
 	"ssht/sshUtils"
 
@@ -15,7 +16,7 @@ var baseCommands = []string{
 	":badkeys", ":keys", ":cmd", ":reload", ":quit",
 	":help", ":ping", ":select all", ":select ", ":clear",
 	":deselect", ":sort name", ":sort ip", ":sort status",
-	":all", ":tag ", ":run ", ":exec ",
+	":all", ":tag ", ":run ", ":exec ", ":open ",
 }
 
 // AutocompleteInputField embeds tview.InputField with inline ghost-text
@@ -77,6 +78,10 @@ func GetCommandSuggestions(input string) []string {
 	}
 
 	lower := strings.ToLower(input)
+	fields := strings.Fields(input)
+	if len(fields) >= 2 && strings.EqualFold(fields[0], ":open") {
+		return suggestOpenLayouts(input, fields)
+	}
 
 	// Dynamic tag completion: if input starts with :tag or :t
 	if strings.HasPrefix(lower, ":tag ") || strings.HasPrefix(lower, ":t ") {
@@ -135,6 +140,27 @@ func GetCommandSuggestions(input string) []string {
 		}
 	}
 	return suggs
+}
+
+func suggestOpenLayouts(input string, fields []string) []string {
+	endsWithSpace := strings.TrimRightFunc(input, unicode.IsSpace) != input
+	prefix := input
+	var partial string
+	switch {
+	case len(fields) == 2 && endsWithSpace:
+	case len(fields) == 3 && !endsWithSpace:
+		partial = fields[2]
+		prefix = strings.TrimSuffix(input, partial)
+	default:
+		return nil
+	}
+	var suggestions []string
+	for _, layout := range openLayouts {
+		if strings.HasPrefix(layout.name, strings.ToLower(partial)) {
+			suggestions = append(suggestions, prefix+layout.name)
+		}
+	}
+	return suggestions
 }
 
 // UpdateSuggestions computes matching suggestions and updates the ghost suffix.

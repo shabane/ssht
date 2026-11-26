@@ -56,7 +56,7 @@ func ShowCommandFooterHints() {
 	if Footer == nil {
 		return
 	}
-	Footer.SetText("Commands: [yellow]:tag <name>[-] | [yellow]:proxy[-] | [yellow]:fwd[-] | [yellow]:badkeys[-] | [yellow]:cmd[-] | [yellow]:keys[-] | [yellow]:all[-] | [yellow]Esc[-] Cancel")
+	Footer.SetText("[yellow]:open <count> <layout>[-] | [yellow]:tag <name>[-] | [yellow]:proxy[-] | [yellow]:fwd[-] | [yellow]:badkeys[-] | [yellow]:cmd[-] | [yellow]:keys[-] | [yellow]:all[-] | [yellow]Esc[-] Cancel")
 }
 
 // ShowSearchFooterHints displays cheat-sheet hints for search/filter mode.

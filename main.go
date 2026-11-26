@@ -16,6 +16,7 @@ import (
 	"ssht/tviewUtils"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 var (
@@ -268,6 +269,13 @@ func main() {
 						hideSearchBox()
 						if res.Target != "" {
 							runRemoteCommand(res.Target)
+						}
+					} else if res.Action == "open" {
+						hideSearchBox()
+						if !res.Handled {
+							component.SetFooterMessage(res.Message)
+						} else if err := tmuxUtils.OpenRepeatedInTmux(res.Mode, res.Hosts, res.CountPerHost); err != nil {
+							component.SetFooterMessage("[red]" + tview.Escape(err.Error()) + "[-]")
 						}
 					} else {
 						// Action / control command (:q, :reload, :select, :clear, :ping, :sort) or unknown

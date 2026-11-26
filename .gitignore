@@ -33,3 +33,6 @@ go.work.sum
 .idea
 ssht
 .antigravitycli/
+
+# Superpowers SDD workspaces
+.superpowers/

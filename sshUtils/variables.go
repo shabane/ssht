@@ -1,5 +1,7 @@
 package sshUtils
 
+import "sync"
+
 // HostMetadata holds parsed SSH configuration directives and source tracking
 // information for an SSH host alias.
 type HostMetadata struct {
@@ -21,8 +23,31 @@ type HostMetadata struct {
 	SourceLine     int      // 1-based line number of the "Host <alias>" line
 }
 
+// DialTarget resolves the host and port a reachability check should dial,
+// mirroring ssh's own fallbacks: a host without an explicit HostName directive
+// is addressed by its alias, and a host without a Port directive uses 22.
+// The alias fallback deliberately lives here rather than in HostName, because
+// an empty HostName carries meaning for renderers ("n/a") and search filters.
+func (m HostMetadata) DialTarget() (host, port string) {
+	host = m.HostName
+	if host == "" {
+		host = m.Alias
+	}
+	port = m.Port
+	if port == "" {
+		port = "22"
+	}
+	return host, port
+}
+
 // HostsMeta maps host aliases to their rich metadata.
 var HostsMeta = make(map[string]HostMetadata)
+
+// hostsMu guards cross-goroutine access to HostsMeta and hostConfigs: the
+// ping goroutine reads the snapshot via GetHostMeta while reloads on the UI
+// thread build a fresh one and publish it under the write lock. Test code
+// assigning these maps directly is single-threaded by construction.
+var hostsMu sync.RWMutex
 
 var AllHosts []string
 

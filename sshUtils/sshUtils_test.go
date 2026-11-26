@@ -200,6 +200,8 @@ Host prod-web
 
 Host default-host
     HostName 10.0.0.1
+
+Host alias-only
 `, keyPath)
 
 	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
@@ -210,8 +212,8 @@ Host default-host
 	if err != nil {
 		t.Fatalf("GetAllHosts failed: %v", err)
 	}
-	if len(hosts) != 2 {
-		t.Fatalf("expected 2 hosts, got %d", len(hosts))
+	if len(hosts) != 3 {
+		t.Fatalf("expected 3 hosts, got %d", len(hosts))
 	}
 
 	meta, ok := HostsMeta["prod-web"]
@@ -288,6 +290,102 @@ Host default-host
 	}
 	if defMeta.SourceLine != 16 {
 		t.Errorf("expected SourceLine 16, got %d", defMeta.SourceLine)
+	}
+
+	// Pin the alias-only contract: a host with no HostName/Port/User directives.
+	// HostName must stay empty in the snapshot (NOT the alias) — the pinger's
+	// alias-fallback and formatHost's "n/a" rendering rule depend on it. Port is
+	// baked to the ssh default "22" at populate time.
+	aliasMeta, ok := HostsMeta["alias-only"]
+	if !ok {
+		t.Fatalf("HostsMeta missing alias-only")
+	}
+	if aliasMeta.HostName != "" {
+		t.Errorf("expected empty HostName for alias-only, got %q", aliasMeta.HostName)
+	}
+	if aliasMeta.User != "" {
+		t.Errorf("expected empty User for alias-only, got %q", aliasMeta.User)
+	}
+	if aliasMeta.Port != "22" {
+		t.Errorf("expected default Port '22' for alias-only, got %q", aliasMeta.Port)
+	}
+	if aliasMeta.SourceLine != 19 {
+		t.Errorf("expected SourceLine 19 for alias-only, got %d", aliasMeta.SourceLine)
+	}
+}
+
+func TestHostMetadata_WildcardInheritance(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config")
+	configContent := `Host *
+    User shareduser
+
+Host inherit-host
+    HostName 1.2.3.4
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	hosts, err := GetAllHosts(configPath)
+	if err != nil {
+		t.Fatalf("GetAllHosts failed: %v", err)
+	}
+	if len(hosts) != 1 || hosts[0] != "inherit-host" {
+		t.Fatalf("expected only inherit-host (wildcard block skipped), got %v", hosts)
+	}
+
+	meta, ok := HostsMeta["inherit-host"]
+	if !ok {
+		t.Fatalf("HostsMeta missing inherit-host")
+	}
+	// Directives inherited from a wildcard Host * block must land in the
+	// snapshot at parse time (via getDirective's global fallback) — this is
+	// what lets formatHostLocked migrate to snapshot reads behavior-identically.
+	if meta.User != "shareduser" {
+		t.Errorf("expected wildcard-inherited User 'shareduser', got %q", meta.User)
+	}
+	if meta.HostName != "1.2.3.4" {
+		t.Errorf("expected HostName '1.2.3.4', got %q", meta.HostName)
+	}
+}
+
+func TestHostMetadata_DialTarget(t *testing.T) {
+	tests := []struct {
+		name string
+		meta HostMetadata
+		want string
+		port string
+	}{
+		{
+			name: "explicit HostName and Port pass through",
+			meta: HostMetadata{Alias: "full", HostName: "10.0.0.5", Port: "2222"},
+			want: "10.0.0.5",
+			port: "2222",
+		},
+		{
+			name: "empty HostName falls back to the alias (pinger rule)",
+			meta: HostMetadata{Alias: "bare-host", HostName: "", Port: "22"},
+			want: "bare-host",
+			port: "22",
+		},
+		{
+			name: "empty Port defaults to 22",
+			meta: HostMetadata{Alias: "noport", HostName: "h.example", Port: ""},
+			want: "h.example",
+			port: "22",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotHost, gotPort := tc.meta.DialTarget()
+			if gotHost != tc.want {
+				t.Errorf("DialTarget() host = %q, want %q", gotHost, tc.want)
+			}
+			if gotPort != tc.port {
+				t.Errorf("DialTarget() port = %q, want %q", gotPort, tc.port)
+			}
+		})
 	}
 }
 
@@ -691,7 +789,9 @@ Host plain-host
 }
 
 func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
-	// Test that SearchHostname does not panic and resolves directives when HostsMeta is unpopulated
+	// Pin the no-snapshot contract: a host that is not in HostsMeta matches by
+	// alias only (zero-value metadata, Alias set), and the lookup must not
+	// reach through to ssh_config or write anything back into HostsMeta.
 	oldMeta := HostsMeta
 	defer func() { HostsMeta = oldMeta }()
 	HostsMeta = make(map[string]HostMetadata)
@@ -703,12 +803,29 @@ func TestSearchHostname_FallbackWithoutHostsMeta(t *testing.T) {
 
 	results = SearchHostname([]string{"some-host"}, "some")
 	if len(results) != 1 || results[0] != "some-host" {
-		t.Errorf("expected ['some-host'], got %v", results)
+		t.Errorf("expected ['some-host'] via alias-only match, got %v", results)
 	}
 
 	results = SearchHostname([]string{"some-host"}, "#nonexistent")
 	if len(results) != 0 {
 		t.Errorf("expected 0 results, got %v", results)
+	}
+
+	if len(HostsMeta) != 0 {
+		t.Errorf("expected no populate-on-miss write into HostsMeta, got %d entries: %v", len(HostsMeta), HostsMeta)
+	}
+
+	// Direct lookup of an unknown host returns zero-value metadata with the
+	// alias filled in — no live ssh_config read, no side effect.
+	meta := GetHostMeta("some-host")
+	if meta.Alias != "some-host" {
+		t.Errorf("expected Alias 'some-host' on miss, got %q", meta.Alias)
+	}
+	if meta.HostName != "" || meta.User != "" || meta.Port != "" {
+		t.Errorf("expected zero-value directives on miss, got %+v", meta)
+	}
+	if len(HostsMeta) != 0 {
+		t.Errorf("expected GetHostMeta miss to leave HostsMeta empty, got %d entries", len(HostsMeta))
 	}
 }
 
@@ -726,5 +843,66 @@ func TestGetHostMeta(t *testing.T) {
 	meta := GetHostMeta("my-server")
 	if meta.Alias != "my-server" || meta.HostName != "10.0.0.1" || meta.User != "admin" {
 		t.Fatalf("unexpected metadata: %+v", meta)
+	}
+}
+
+// TestGetHostMeta_ConcurrentWithGetAllHosts reproduces the ping-vs-reload
+// race: the ping goroutine reads the snapshot via GetHostMeta while a
+// :reload / editor-exit re-parse on another thread republishes it. The
+// snapshot read and the publish are mutex-guarded, so this must stay clean
+// under -race.
+func TestGetHostMeta_ConcurrentWithGetAllHosts(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config")
+	content := "Host race-a\n    HostName 10.0.0.1\n\nHost race-b\n    HostName 10.0.0.2\n"
+	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+	if _, err := GetAllHosts(configPath); err != nil {
+		t.Fatalf("initial GetAllHosts failed: %v", err)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := 0; i < 100; i++ {
+			if _, err := GetAllHosts(configPath); err != nil {
+				t.Errorf("concurrent reload failed: %v", err)
+				return
+			}
+		}
+	}()
+	for i := 0; i < 2000; i++ {
+		if meta := GetHostMeta("race-a"); meta.HostName != "10.0.0.1" {
+			t.Errorf("unexpected HostName for race-a during concurrent reload: %q", meta.HostName)
+			break
+		}
+	}
+	<-done
+}
+
+// TestGetAllHosts_FailedParseKeepsPreviousSnapshot pins the failure contract
+// of a reload: a config that fails to parse (e.g. a fumbled edit saved from
+// $EDITOR) must leave the previous snapshot fully intact.
+func TestGetAllHosts_FailedParseKeepsPreviousSnapshot(t *testing.T) {
+	tmpDir := t.TempDir()
+	goodPath := filepath.Join(tmpDir, "good_config")
+	if err := os.WriteFile(goodPath, []byte("Host keep-host\n    HostName 10.0.0.9\n"), 0600); err != nil {
+		t.Fatalf("failed to write good config: %v", err)
+	}
+	if _, err := GetAllHosts(goodPath); err != nil {
+		t.Fatalf("initial GetAllHosts failed: %v", err)
+	}
+
+	badPath := filepath.Join(tmpDir, "bad_config")
+	if err := os.WriteFile(badPath, []byte("Host broken\n    Match\n"), 0600); err != nil {
+		t.Fatalf("failed to write bad config: %v", err)
+	}
+	if _, err := GetAllHosts(badPath); err == nil {
+		t.Fatal("expected parse error for malformed config, got nil")
+	}
+
+	if meta := GetHostMeta("keep-host"); meta.HostName != "10.0.0.9" {
+		t.Errorf("failed reload wiped the snapshot: keep-host HostName = %q, want 10.0.0.9", meta.HostName)
 	}
 }

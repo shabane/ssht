@@ -111,6 +111,23 @@ func ExecuteCommand(raw string, configPath string) CommandResult {
 		return openCommand(clean, "tiled")
 	}
 
+	if strings.HasPrefix(clean, "!") {
+		cmdToRun := strings.TrimSpace(strings.TrimPrefix(clean, "!"))
+		if cmdToRun == "" {
+			return CommandResult{
+				Action:  "exec_hold",
+				Message: "[yellow]Usage: :! <command>[-]",
+				Handled: false,
+			}
+		}
+		return CommandResult{
+			Action:  "exec_hold",
+			Target:  cmdToRun,
+			Message: fmt.Sprintf("Running %q on selected hosts...", cmdToRun),
+			Handled: true,
+		}
+	}
+
 	switch cmd {
 	case "open":
 		switch len(fields) {

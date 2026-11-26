@@ -11,7 +11,6 @@ import (
 	"ssht/sshUtils"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/kevinburke/ssh_config"
 	"github.com/rivo/tview"
 )
 
@@ -163,9 +162,10 @@ func FormatHost(host, color string) string {
 }
 
 func formatHostLocked(host, color string) string {
-	proxyJump := ssh_config.Get(host, "proxyjump")
-	proxyCommand := ssh_config.Get(host, "proxycommand")
-	isProxy := proxyJump != "" || proxyCommand != ""
+	// All host facts come from the parse-time metadata snapshot — no live
+	// ssh_config access from the render path.
+	meta := sshUtils.GetHostMeta(host)
+	isProxy := meta.ProxyJump != "" || meta.ProxyCommand != ""
 
 	if isProxy && color == "" {
 		color = "yellow"
@@ -177,11 +177,11 @@ func formatHostLocked(host, color string) string {
 		color = existingColor
 	}
 
-	ip := ssh_config.Get(host, "hostname")
+	ip := meta.HostName
 	if ip == "" {
 		ip = "n/a"
 	}
-	user := ssh_config.Get(host, "user")
+	user := meta.User
 	var target string
 	if user != "" {
 		target = fmt.Sprintf("%s@%s", user, ip)
@@ -360,12 +360,10 @@ func SortVisibleByIP() {
 	mu.Lock()
 	defer mu.Unlock()
 
+	// Sort key comes from the parse-time snapshot: a host with no HostName
+	// directive sorts as an empty string (non-IP comparison).
 	getIP := func(h string) string {
-		meta := sshUtils.GetHostMeta(h)
-		if meta.HostName != "" {
-			return meta.HostName
-		}
-		return ssh_config.Get(h, "hostname")
+		return sshUtils.GetHostMeta(h).HostName
 	}
 
 	sort.SliceStable(visibleHosts, func(i, j int) bool {
@@ -436,7 +434,8 @@ func ShowHelpGuide() {
 	ListBox.AddItem("/", "Focus Search Box", 0, nil)
 	ListBox.AddItem(":", "Command Prompt Mode (:tag, :proxy, :fwd, etc.)", 0, nil)
 	ListBox.AddItem(":open <count> <layout>", "Open connections per selected host (tiled, stacked, or windows)", 0, nil)
-	ListBox.AddItem("< / >", "Run On-Demand Command Across Selected Hosts in Tmux", 0, nil)
+	ListBox.AddItem(":! / !", "Run Non-Interactive Command & Hold Output in Tmux", 0, nil)
+	ListBox.AddItem("< / >", "Run Interactive Command Across Selected Hosts in Tmux", 0, nil)
 	ListBox.AddItem("CTRL+S", "Sort Hosts (Selected & Reachable first)", 0, nil)
 	ListBox.AddItem("CTRL+W", "Connect Directly to Selected Host (No Tmux)", 0, nil)
 	ListBox.AddItem("CTRL+T", "Connect to Selected Host with Remote Tmux", 0, nil)

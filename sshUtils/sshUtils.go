@@ -34,6 +34,13 @@ func GetAllHosts(customPath string) ([]string, error) {
 		}
 	}
 	CustomConfigPath = configPath
+	// After the ADR 0010 snapshot migration, ssh_config is read only on this
+	// parse path: the pinger and every renderer consume the HostsMeta
+	// snapshot instead. Replacing DefaultUserSettings (and its ConfigFinder)
+	// here therefore cannot race with any concurrent ssh_config.Get — by
+	// construction there are none. The freshly parsed HostsMeta/hostConfigs
+	// are published below under hostsMu so concurrent snapshot readers on
+	// other goroutines see whole-parse results, never a torn map.
 	ssh_config.DefaultUserSettings = &ssh_config.UserSettings{
 		IgnoreErrors: false,
 	}
@@ -51,11 +58,13 @@ func GetAllHosts(customPath string) ([]string, error) {
 		return nil, fmt.Errorf("failed to open SSH config file (%s): %w", configPath, err)
 	}
 
-	HostsMeta = make(map[string]HostMetadata)
-	hostConfigs = make(map[string]*ssh_config.Config)
-
+	// Parse into locals and publish only on success, so a failed reload
+	// (e.g. a fumbled edit saved from $EDITOR) leaves the previous snapshot
+	// fully intact instead of degrading every host to "n/a".
 	seenFiles := make(map[string]bool)
-	rawHosts, err := parseConfigFile(configPath, 0, seenFiles)
+	newMeta := make(map[string]HostMetadata)
+	newConfigs := make(map[string]*ssh_config.Config)
+	rawHosts, err := parseConfigFile(configPath, 0, seenFiles, newMeta, newConfigs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse SSH config file (%s): %w", configPath, err)
 	}
@@ -68,6 +77,11 @@ func GetAllHosts(customPath string) ([]string, error) {
 			uniqueHosts = append(uniqueHosts, h)
 		}
 	}
+
+	hostsMu.Lock()
+	HostsMeta = newMeta
+	hostConfigs = newConfigs
+	hostsMu.Unlock()
 
 	AllHosts = uniqueHosts
 	MaxHostLen = 0
@@ -123,9 +137,9 @@ func parseHostLine(line string) []string {
 	return patterns
 }
 
-func getDirective(host, key string) string {
+func getDirective(host, key string, configs map[string]*ssh_config.Config) string {
 	lowerKey := strings.ToLower(key)
-	if cfg, ok := hostConfigs[host]; ok && cfg != nil {
+	if cfg, ok := configs[host]; ok && cfg != nil {
 		val, err := cfg.Get(host, lowerKey)
 		if err == nil && val != "" {
 			return val
@@ -138,8 +152,8 @@ func getDirective(host, key string) string {
 	return val
 }
 
-func populateHostMetadata(host, sourceFile string, line int) {
-	if _, exists := HostsMeta[host]; exists {
+func populateHostMetadata(host, sourceFile string, line int, meta map[string]HostMetadata, configs map[string]*ssh_config.Config) {
+	if _, exists := meta[host]; exists {
 		return
 	}
 
@@ -150,27 +164,27 @@ func populateHostMetadata(host, sourceFile string, line int) {
 		}
 	}
 
-	hostname := getDirective(host, "hostname")
-	user := getDirective(host, "user")
-	port := getDirective(host, "port")
+	hostname := getDirective(host, "hostname", configs)
+	user := getDirective(host, "user", configs)
+	port := getDirective(host, "port", configs)
 	if port == "" {
 		port = "22"
 	}
 
 	var tags []string
-	tagStr := getDirective(host, "tag")
+	tagStr := getDirective(host, "tag", configs)
 	if tagStr != "" {
 		tags = strings.Fields(tagStr)
 	}
 
-	remoteCommand := getDirective(host, "remotecommand")
-	localForward := getDirective(host, "localforward")
-	dynamicForward := getDirective(host, "dynamicforward")
-	remoteForward := getDirective(host, "remoteforward")
-	proxyJump := getDirective(host, "proxyjump")
-	proxyCommand := getDirective(host, "proxycommand")
+	remoteCommand := getDirective(host, "remotecommand", configs)
+	localForward := getDirective(host, "localforward", configs)
+	dynamicForward := getDirective(host, "dynamicforward", configs)
+	remoteForward := getDirective(host, "remoteforward", configs)
+	proxyJump := getDirective(host, "proxyjump", configs)
+	proxyCommand := getDirective(host, "proxycommand", configs)
 
-	identityFile := getDirective(host, "identityfile")
+	identityFile := getDirective(host, "identityfile", configs)
 	keyExists := true
 	keyError := ""
 
@@ -200,7 +214,7 @@ func populateHostMetadata(host, sourceFile string, line int) {
 		}
 	}
 
-	HostsMeta[host] = HostMetadata{
+	meta[host] = HostMetadata{
 		Alias:          host,
 		HostName:       hostname,
 		User:           user,
@@ -220,7 +234,7 @@ func populateHostMetadata(host, sourceFile string, line int) {
 	}
 }
 
-func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]string, error) {
+func parseConfigFile(path string, depth int, seenFiles map[string]bool, meta map[string]HostMetadata, configs map[string]*ssh_config.Config) ([]string, error) {
 	absPath, err := filepath.Abs(path)
 	if err == nil {
 		path = absPath
@@ -272,10 +286,10 @@ func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]strin
 			if lineNum == 0 {
 				lineNum = 1
 			}
-			if _, exists := hostConfigs[pattern]; !exists {
-				hostConfigs[pattern] = config
+			if _, exists := configs[pattern]; !exists {
+				configs[pattern] = config
 			}
-			populateHostMetadata(pattern, path, lineNum)
+			populateHostMetadata(pattern, path, lineNum, meta, configs)
 		}
 
 		for _, node := range hostBlock.Nodes {
@@ -298,7 +312,7 @@ func parseConfigFile(path string, depth int, seenFiles map[string]bool) ([]strin
 							continue
 						}
 						for _, match := range matches {
-							subHosts, err := parseConfigFile(match, depth+1, seenFiles)
+							subHosts, err := parseConfigFile(match, depth+1, seenFiles, meta, configs)
 							if err == nil {
 								hosts = append(hosts, subHosts...)
 							}
@@ -316,15 +330,20 @@ func GetHostMeta(host string) HostMetadata {
 	return getHostMeta(host)
 }
 
+// getHostMeta returns metadata for the given host alias. Hosts parsed at
+// startup are always present; an unknown host gets zero-value metadata with
+// the alias filled in — no ssh_config reach-through and no map write. Reads
+// take the snapshot RWMutex, so lookups are safe from any goroutine,
+// including the ping goroutine while the UI thread reloads configs.
 func getHostMeta(host string) HostMetadata {
-	if HostsMeta == nil {
-		HostsMeta = make(map[string]HostMetadata)
-	}
-	if meta, ok := HostsMeta[host]; ok {
+	// Reading a nil map is safe in Go: a nil HostsMeta simply yields a miss.
+	hostsMu.RLock()
+	meta, ok := HostsMeta[host]
+	hostsMu.RUnlock()
+	if ok {
 		return meta
 	}
-	populateHostMetadata(host, "", 0)
-	return HostsMeta[host]
+	return HostMetadata{Alias: host}
 }
 
 func hostHasTag(tags []string, val string) bool {
